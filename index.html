@@ -4,11 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <!-- เปลี่ยนรูปล็อกเก็ตเล็กๆ ตรงนี้ (เอาริงก์รูปภาพมาใส่ในเครื่องหมายคำพูด) -->
+  <!-- 1. เปลี่ยนโลโก้ไอคอนบนแท็บเบราว์เซอร์ และไอคอนแอปมือถือ -->
   <link rel="icon" type="image/png" href="https://img.icons8.com/color/512/gas-station.png">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/gas-station.png">
+  
+  <!-- 2. เปลี่ยนชื่อที่แสดงบนแท็บเบราว์เซอร์ -->
+  <title>ระบบรับ-จ่ายน้ำมัน ทบ.</title>
 
-  <!-- เปลี่ยนชื่อที่แสดงบนแท็บเว็บตรงนี้ -->
-  <title>ระบบรับ-จ่ายน้ำมัน</title>
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #4a543f; }
+    iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
 
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 3. นำลิงก์ Web App จาก Google Apps Script มาใส่แทนที่ข้อความภาษาไทยใน src="..." -->
+  <iframe src="https://script.google.com/macros/s/AKfycbzBtqXwS6L5yqdG1G1eUonozhUFmOWw7LeDWL6QYTnuVW1XoWFd1fqiYsK83aRnEOl6tQ/exec"></iframe>
+
+</body>
+</html>
