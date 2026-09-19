@@ -3,23 +3,2612 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  
-  <!-- 1. เปลี่ยนโลโก้ไอคอนบนแท็บเบราว์เซอร์ และไอคอนแอปมือถือ -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#122840">
+
   <link rel="icon" type="image/png" href="https://img.icons8.com/color/512/gas-station.png">
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/gas-station.png">
-  
-  <!-- 2. เปลี่ยนชื่อที่แสดงบนแท็บเบราว์เซอร์ -->
-  <title>ระบบรับ-จ่ายน้ำมัน</title>
+  <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiRnVlbCBNZ210Iiwic2hvcnRfbmFtZSI6IkZ1ZWxBcHAiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjNGE1NDNmIiwidGhlbWVfY29sb3IiOiIjMTIyODQwIiwiaWNvbnMiOlt7InNyYyI6Imh0dHBzOi8vaW1nLmljb25zOC5jb20vY29sb3IvNTEyL2dhcy1zdGF0aW9uLnBuZyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmcifV19">
+
+  <title>ระบบรับ-จ่ายน้ำมัน ทบ.</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #4a543f; }
-    iframe { width: 100%; height: 100%; border: none; }
+    *, *::before, *::after { box-sizing: border-box; }
+    
+    :root {
+      --primary: #122840; --accent: #D4AF37; --bg-card: #ffffff; --bg-box: #F4F6F8;        
+      --text-main: #111827; --text-muted: #4B5563; --border-color: #CBD5E1;  
+      --success: #16A085; --warning: #F39C12; --danger: #C0392B; --info: #2980B9;
+    }
+    
+    html, body { 
+      max-width: 100vw; min-height: 100vh; overflow-x: hidden; 
+      background-color: #4a543f; color: var(--text-main); 
+      font-family: 'Sarabun', sans-serif; margin: 0; padding: 0;
+      transition: background 0.3s, color 0.3s; 
+    }
+
+    body.dark-mode {
+      --bg-card: #1E293B !important;
+      --bg-box: #0F172A !important;
+      --text-main: #E2E8F0 !important;
+      --text-muted: #94A3B8 !important;
+      --border-color: #334155 !important;
+      background-color: #0B1120 !important;
+      background-image: none !important;
+    }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+      background: #0F172A !important;
+      color: #E2E8F0 !important;
+      border-color: #334155 !important;
+    }
+    body.dark-mode .table-container table, body.dark-mode .table-container th { background: #1E293B !important; }
+    body.dark-mode tr:nth-child(even) { background: #334155 !important; }
+    body.dark-mode tr:hover { background: #475569 !important; }
+    body.dark-mode .stat-card { background: #1E293B !important; }
+    body.dark-mode .mini-select { background: #0F172A !important; }
+    body.dark-mode .maintenance-box { background: #1E293B !important; }
+    @media screen and (max-width: 900px) {
+       body.dark-mode .table-container tr { background: #1E293B !important; border-color: #334155 !important; }
+       body.dark-mode .table-container td { border-bottom-color: #334155 !important; }
+    }
+
+    .topbar { display: none; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 900;}
+    .menu-toggle { font-size: 24px; cursor: pointer; color: var(--primary); font-weight: bold;}
+    
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: var(--primary); color: #fff; box-shadow: 2px 0 15px rgba(0,0,0,0.3); z-index: 1000; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .sidebar-header { padding: 25px 20px; font-size: 20px; font-weight: 700; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); text-align:center;}
+    .sidebar-user { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; background: rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: space-between;}
+    .user-avatar { width: 45px; height: 45px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--primary); font-weight: bold;}
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 0;}
+    .tab-btn { width: 100%; text-align: left; padding: 15px 25px; background: transparent; border: none; border-left: 5px solid transparent; color: rgba(255,255,255,0.7); font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all 0.2s;}
+    .tab-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .tab-btn.active { background: rgba(255,255,255,0.1); color: #fff; border-left-color: var(--accent); }
+    .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .btn-logout { width: 100%; background: var(--danger); border: none; color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 700; transition: 0.3s; }
+    .btn-logout:hover { filter: brightness(0.85); box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+    .sidebar-backdrop { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; backdrop-filter: blur(2px);}
+    .main-content { margin-left: 260px; padding: 20px; transition: margin-left 0.3s ease; }
+
+    .container { max-width: 100%; margin: auto; background: var(--bg-card); backdrop-filter: blur(8px); padding: 30px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.4); position: relative; }
+    .auth-box { display: none; max-width: 450px !important; margin: 8vh auto !important; }
+    
+    .maintenance-box { display: none; text-align: center; max-width: 500px !important; margin: 15vh auto !important; padding: 40px; background: #fff; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border-top: 5px solid var(--danger); }
+    .maintenance-icon { font-size: 60px; margin-bottom: 15px; animation: spin 3s linear infinite; }
+    
+    h2 { text-align: center; color: var(--primary); margin-top: 0; margin-bottom: 25px; font-weight: 700; font-size: 24px;}
+    .content-box { background: var(--bg-box); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .section-title { font-size: 16px; font-weight: 700; color: var(--primary); margin-top: 0; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: inline-block; }
+    .auth-toggle { text-align: center; margin-top: 20px; font-size: 14px; cursor: pointer; color: var(--primary); text-decoration: underline; font-weight: 600; }
+    
+    .form-group { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-main); font-weight: 700; }
+    input[type="text"], input[type="password"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 12px 15px; background: #FFFFFF; border: 1.5px solid var(--border-color); color: var(--text-main); border-radius: 6px; font-family: 'Sarabun', sans-serif; font-size: 15px; font-weight: 500; transition: 0.3s; }
+    input[type="color"] { padding: 4px; height: 50px; cursor: pointer; }
+    input[readonly] { background: #E2E8F0; cursor: not-allowed; font-weight: 700; color: var(--primary);}
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;}
+    .checkbox-group { display: flex; align-items: center; justify-content: flex-start; margin-bottom: 20px; }
+    input[type="checkbox"] { width: 18px; height: 18px; margin: 0 10px 0 0; cursor: pointer; accent-color: var(--primary); }
+    .password-wrapper { position: relative; display: block; }
+    .password-wrapper input { padding-right: 45px; }
+    .toggle-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; user-select: none; color: var(--text-muted); }
+    
+    button.primary-btn { width: 100%; padding: 14px; background: var(--primary); border: none; color: #fff; font-size: 16px; font-weight: 700; border-radius: 6px; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: 0.3s; letter-spacing: 0.5px; }
+    button.primary-btn:hover { filter: brightness(0.85); box-shadow: 0 4px 15px rgba(0,0,0, 0.3); }
+    button.approve-btn { background: var(--primary); color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-weight: 600; font-size: 13px; transition: 0.3s;}
+    button.approve-btn:hover { filter: brightness(0.85); }
+    button.edit-btn { background: var(--warning); color: #fff; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-size:13px; font-weight: 600; }
+    button.cancel-btn { width: 100%; padding: 12px; background: #95A5A6; color: #fff; border: none; font-size: 15px; font-weight: 600; border-radius: 6px; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: 0.3s;}
+    button.cancel-btn:hover { filter: brightness(0.85); }
+    button.print-btn { background: var(--success); color: #fff; border: none; padding: 12px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-weight: 600; margin-bottom: 20px; font-size: 15px; transition: 0.3s; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); margin-right: 10px;}
+    button.print-btn:hover { filter: brightness(0.85); }
+    button.export-btn { background: #27AE60; color: #fff; border: none; padding: 12px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-weight: 600; margin-bottom: 20px; font-size: 15px; transition: 0.3s; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);}
+    button.export-btn:hover { filter: brightness(0.85); }
+    .mini-select { width: 100%; padding: 6px 10px; font-size: 13px; border: 1.5px solid var(--border-color); background: #fff; color: var(--text-main); border-radius: 4px; font-weight: 600; cursor: pointer;}
+    
+    .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;}
+    .month-filter { padding: 8px 15px; background: #fff; border: 1.5px solid var(--primary); color: var(--primary); border-radius: 6px; font-family: 'Sarabun', sans-serif; font-size: 14px; cursor: pointer; font-weight: 700; outline: none; }
+    .search-input { padding: 8px 15px; border-radius: 6px; border: 1.5px solid var(--border-color); font-family: 'Sarabun', sans-serif; width: 100%; max-width: 300px; font-size: 14px;}
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .stat-card { background: #fff; padding: 20px 10px; border-radius: 10px; text-align: center; border: 1px solid var(--border-color); border-top: 5px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .stat-card h3 { margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .stat-card .val { font-size: 24px; font-weight: 700; color: var(--primary); margin-top: 8px; }
+    
+    .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); background: #fff; margin-bottom: 10px;}
+    table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; min-width: 800px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
+    th { color: #ffffff; font-weight: 600; background: var(--primary); text-transform: uppercase; font-size: 12px; white-space: nowrap; text-align: center;}
+    td { text-align: left; }
+    td.center { text-align: center; }
+    tr:nth-child(even) { background: #F8FAFC; }
+    tr:hover { background: #F1F5F9; }
+    
+    .pagination-container { display: flex; justify-content: center; gap: 5px; margin-top: 15px; flex-wrap: wrap; }
+    .pagination-container button { padding: 6px 12px; border: 1px solid var(--border-color); background: #fff; color: var(--text-main); border-radius: 6px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; transition: 0.2s;}
+    .pagination-container button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .pagination-container button:hover:not(.active) { background: var(--bg-box); color: var(--primary); border-color: var(--primary); }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 40, 64, 0.7); z-index: 999; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(4px); }
+    .modal-content { background: #FFFFFF; padding: 30px; border-radius: 12px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+    .admin-subtab { margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .admin-subtab button { flex:1; min-width: 120px; font-size:13px; padding:10px 5px; border-radius: 6px; border: 1.5px solid transparent;}
+    .admin-subtab button.active-sub { border: 1.5px solid var(--primary); box-shadow: 0 0 8px rgba(0,0,0,0.1);}
+    
+    .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 20px; }
+
+    @media screen and (max-width: 900px) {
+      body { padding: 0; }
+      .topbar { display: flex; }
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-backdrop.show { display: block; }
+      .main-content { margin-left: 0; padding: 15px; overflow-x: hidden; }
+      .container { padding: 15px; border-radius: 10px; width: 100%; }
+      .auth-box { margin: 5vh auto !important; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 10px; } 
+      .dashboard-grid { gap: 8px; }
+      .stat-card { padding: 15px 5px; }
+      .admin-subtab { flex-direction: column; gap:8px;}
+      .admin-subtab button { width: 100%;}
+      .chart-container { height: 250px; }
+      .modal-content { padding: 20px; }
+      .search-input { max-width: 100%; }
+
+      .table-container { border: none; background: transparent; overflow-x: visible; }
+      table { min-width: 100% !important; width: 100% !important; border: none; }
+      .table-container thead { display: none; } 
+      .table-container tbody, .table-container tr, .table-container td { display: block; width: 100%; }
+      .table-container tr { margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 10px; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; }
+      .table-container td { position: relative; padding: 12px 15px 12px 42% !important; text-align: right !important; border: none; border-bottom: 1px dashed #E2E8F0; min-height: 40px; font-size: 14px; word-break: break-word; }
+      .table-container td:last-child { border-bottom: none; }
+      .table-container td::before { content: attr(data-label); position: absolute; left: 15px; top: 12px; width: 35%; padding-right: 10px; text-align: left; font-weight: 700; color: var(--text-muted); font-size: 13px; white-space: normal; }
+      .table-container td input, .table-container td select, .table-container td button { width: 100% !important; max-width: 180px; margin-left: auto; display: block; }
+      .table-container td[colspan] { padding: 20px !important; text-align: center !important; }
+      .table-container td[colspan]::before { content: none; }
+    }
+
+    .print-only { display: none; }
+    @page { size: A4 landscape; margin: 0.5cm; } 
+    @media print {
+      html, body { overflow: visible !important; height: auto !important; min-height: auto !important; background: #ffffff !important; color: #000000 !important; font-size: 10px !important; line-height: 1.2 !important; padding: 0 !important; margin: 0 !important; }
+      .main-content { margin-left: 0 !important; padding: 0 !important; min-height: auto !important; overflow: visible !important; }
+      .container { background: #ffffff !important; box-shadow: none !important; border: none !important; max-width: 100% !important; padding: 0 !important; overflow: visible !important; }
+      .content-box { border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
+      .no-print, .sidebar, .topbar, .sidebar-backdrop, .auth-box, .print-btn, .export-btn, .admin-subtab, button, select, #loader, .pagination-container, .search-input { display: none !important; }
+      .print-only { display: inline !important; }
+      h2, h3, h4, th, td, .val, label { color: #000000 !important; text-shadow: none !important; }
+      .dashboard-grid { gap: 5px !important; margin-bottom: 10px !important; display: flex !important; }
+      .stat-card { flex: 1 !important; border: 1px solid #000 !important; border-top: 2px solid #000 !important; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none !important; padding: 5px !important; margin-bottom: 5px !important;}
+      .stat-card h3 { font-size: 11px !important; margin: 0 !important; }
+      .stat-card .val { font-size: 16px !important; margin-top: 2px !important; }
+      .table-container { overflow: visible !important; border: none !important; margin-bottom: 0 !important; }
+      table { border-collapse: collapse !important; width: 100% !important; min-width: auto !important; border: 1px solid #000 !important; page-break-inside: auto !important; font-size: 10px !important;}
+      th, td { border: 1px solid #000 !important; background: transparent !important; padding: 3px 4px !important; line-height: 1.1 !important; word-break: break-word !important; }
+      th { background-color: #f2f2f2 !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center;}
+      thead { display: table-header-group !important; } 
+      tr { page-break-inside: avoid !important; page-break-after: auto !important; display: table-row !important; } 
+      .dashboard-header { justify-content: center !important; flex-direction: column; margin-bottom: 5px !important; border: none; }
+      .print-title { display: block !important; text-align: center !important; font-size: 14px !important; font-weight: bold !important; margin-top: 10px !important; margin-bottom: 5px !important; border-bottom: 1px solid #000 !important; padding-bottom: 3px !important; width: 100% !important; color: #000 !important;}
+      .section-title { display: block !important; color: #000 !important; font-size: 14px !important; border-bottom: 1px solid #000 !important; text-align: center !important; width:100% !important; margin-bottom: 5px !important; padding-bottom:3px !important;}
+      #printMonthLabel { display: block !important; font-size: 12px !important; font-weight: bold !important; margin-top: 0 !important; color: #333 !important; text-align: center !important; margin-bottom: 5px !important; text-decoration: none !important;}
+      .chart-container { display: none !important; }
+    }
+    #printMonthLabel { display: none; }
+    
+    .loader { text-align: center; padding: 30px; color: var(--primary); font-weight: 700; font-size: 16px; background:#fff; border-radius:10px; border:1px solid #ccc; margin:20px 0;}
+    .loader-inline { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-  <!-- 3. นำลิงก์ Web App จาก Google Apps Script มาใส่แทนที่ข้อความภาษาไทยใน src="..." -->
-  <iframe src="https://script.google.com/macros/s/AKfycbxj1U6RtBtUmxpMCVxXq_7g2wAj76nzkvTZw3YDUVgPwepDEBFO0T4syhvGpETtgBaizA/exec"></iframe>
+  <datalist id="plateList"></datalist>
+  <datalist id="deptList"></datalist>
+  <datalist id="vehList"></datalist>
+
+  <div class="container maintenance-box" id="maintenanceBox">
+    <div class="maintenance-icon">⚙️</div>
+    <h2 style="color:var(--danger); margin-bottom: 10px;">ระบบกำลังปิดปรับปรุง</h2>
+    <p style="color:var(--text-muted); font-size:16px;">
+      ขออภัยในความไม่สะดวก ขณะนี้ Administrator กำลังทำการปิดปรับปรุงระบบและฐานข้อมูลเพื่อความปลอดภัย <br><br>
+      กรุณารอสักครู่ แล้วทำการรีเฟรชหน้าเว็บใหม่อีกครั้งครับ
+    </p>
+    <div id="maintenanceTime" style="color:var(--danger); font-weight:700; margin-top:15px; font-size:15px; background: #FDEDEC; padding: 10px; border-radius: 6px;"></div>
+    <button class="primary-btn" onclick="location.reload()" style="margin-top:20px; max-width:200px; margin-left:auto; margin-right:auto; display:block;">🔄 โหลดหน้าเว็บใหม่</button>
+  </div>
+
+  <div class="container auth-box" id="loginBox" style="display:block;">
+    <h2>เข้าสู่ระบบส่วนบุคคล</h2>
+    <div class="content-box">
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group"><label>ชื่อผู้ใช้งาน (Username)</label><input type="text" id="loginUsername" required maxlength="8" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')"></div>
+        <div class="form-group">
+          <label>รหัสผ่าน (Password)</label>
+          <div class="password-wrapper">
+            <input type="password" id="loginPassword" required maxlength="8" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')">
+            <span class="toggle-icon" onclick="togglePasswordVisibility('loginPassword', this)">👁️</span>
+          </div>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="rememberMe"><label for="rememberMe" style="margin-bottom: 0; cursor: pointer; font-weight:500;">จดจำการเข้าสู่ระบบไว้ในเครื่องนี้</label>
+        </div>
+        <button type="submit" class="primary-btn" id="btnLogin">เข้าสู่ระบบ</button>
+      </form>
+    </div>
+    <div class="auth-toggle" onclick="toggleAuth('register')">ยังไม่มีบัญชีใช่หรือไม่? สร้างบัญชีใหม่</div>
+  </div>
+
+  <div class="container auth-box" id="registerBox">
+    <h2>สร้างบัญชีผู้ใช้งานใหม่</h2>
+    <div class="content-box">
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label>ตั้งชื่อผู้ใช้งาน</label>
+          <input type="text" id="regUsername" required maxlength="8" placeholder="ภาษาอังกฤษหรือตัวเลข (สูงสุด 8 ตัว)" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')">
+        </div>
+        <div class="form-group">
+          <label>ตั้งรหัสผ่าน</label>
+          <div class="password-wrapper">
+            <input type="password" id="regPassword" required maxlength="8" placeholder="ภาษาอังกฤษหรือตัวเลข (สูงสุด 8 ตัว)" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')">
+            <span class="toggle-icon" onclick="togglePasswordVisibility('regPassword', this)">👁️</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ยืนยันรหัสผ่านอีกครั้ง</label>
+          <div class="password-wrapper">
+            <input type="password" id="regPasswordConfirm" required maxlength="8" placeholder="พิมพ์รหัสผ่านให้ตรงกัน" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '')">
+            <span class="toggle-icon" onclick="togglePasswordVisibility('regPasswordConfirm', this)">👁️</span>
+          </div>
+        </div>
+        <button type="submit" class="primary-btn" id="btnRegister">สมัครสมาชิก</button>
+      </form>
+    </div>
+    <div class="auth-toggle" onclick="toggleAuth('login')">มีบัญชีอยู่แล้ว? กลับไปหน้าเข้าสู่ระบบ</div>
+  </div>
+
+  <div id="appWrapper" style="display: none;">
+    <div class="topbar no-print">
+      <div style="display:flex; align-items:center; gap:15px;">
+        <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+        <div style="font-weight:700; font-size:18px; color:var(--primary);">⛽ ระบบรับ-จ่ายน้ำมัน ทบ.</div>
+      </div>
+      <div id="themeToggleBtnMobile" onclick="toggleDarkMode()" style="font-size:24px; cursor:pointer;" title="สลับโหมดมืด/สว่าง">☀️</div>
+    </div>
+    
+    <div class="sidebar no-print" id="sidebar">
+      <div class="sidebar-header">เมนูการทำงาน</div>
+      <div class="sidebar-user">
+        <div style="display: flex; align-items: center; gap: 15px;">
+           <div class="user-avatar">👤</div>
+           <div>
+              <div id="displayUser" style="font-weight:700; font-size:16px;">User</div>
+              <div id="displayRole" style="font-size:12px; color:var(--accent); font-weight:600;">Role</div>
+           </div>
+        </div>
+        <div id="themeToggleBtnSide" onclick="toggleDarkMode()" style="cursor:pointer; font-size:22px;" title="สลับโหมดมืด/สว่าง">☀️</div>
+      </div>
+      
+      <div class="sidebar-nav">
+         <button class="tab-btn active" id="btnTabForm" onclick="switchTab('form')">📝 ฟอร์มบันทึกข้อมูล</button>
+         <button class="tab-btn" id="btnTabRoute" onclick="switchTab('route')" style="color: #D4AF37;">🗺️ คำนวณระยะทาง (Maps)</button>
+         <button class="tab-btn" id="btnTabDash" onclick="switchTab('dashboard')" style="display: none;">📊 แดชบอร์ดรายงาน</button>
+         <button class="tab-btn" id="btnTabCredit" onclick="switchTab('credit')" style="display: none;">💳 เครดิตน้ำมัน</button>
+         <button class="tab-btn" id="btnTabEquipOil" onclick="switchTab('equipOil')" style="display: none;">🛢️ น้ำมันอุปกรณ์</button>
+         <button class="tab-btn" id="btnTabAdmin" onclick="switchTab('admin')" style="display: none;">⚙️ Administrator</button>
+      </div>
+      <div class="sidebar-footer">
+         <button class="btn-logout" onclick="handleLogout()">🚪 ออกจากระบบ</button>
+      </div>
+    </div>
+    
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+    
+    <div class="main-content">
+      <div class="container" id="mainContainer">
+        
+        <div id="sectionForm">
+          <h2 style="font-size: 22px; text-align: left; margin-bottom: 20px;">บันทึกรายการรับ-จ่ายน้ำมัน</h2>
+          <div class="content-box">
+            <form id="fuelForm" onsubmit="submitForm(event)">
+              <div class="grid-2">
+                  <div class="form-group"><label>วัน/เดือน/ปี</label><input type="date" id="date" required></div>
+                  <div class="form-group"><label>รายการ/ภาระกิจ</label><input type="text" id="mission" required placeholder="ระบุภารกิจให้ชัดเจน"></div>
+              </div>
+              <div class="grid-2">
+                  <div class="form-group">
+                    <label>ประเภทรายการ</label>
+                    <select id="type" required>
+                      <option value="จ่าย">จ่าย (หักยอดประจำ)</option>
+                      <option value="รับ">รับ (เพิ่มยอดประจำ)</option>
+                      <option value="ยืมอัตราพิกัด">ยืมอัตราพิกัด (ดึงโควตามาเพิ่มประจำวัน)</option>
+                      <option value="เติมอัตราพิกัด">เติมอัตราพิกัด (ดึงประจำวันคืนโควตา)</option>
+                    </select>
+                  </div>
+                  <div class="form-group"><label>สายงาน/หน่วย/กองร้อย <small style="color:gray;">(เลือกหรือพิมพ์ใหม่)</small></label><input type="text" id="department" list="deptList" required autocomplete="off" placeholder="เลือกหรือพิมพ์ชื่อหน่วย"></div>
+              </div>
+              <div class="grid-2">
+                  <div class="form-group"><label>ชนิดรถ / เครื่องมือ <small style="color:gray;">(เลือกหรือพิมพ์ใหม่)</small></label><input type="text" id="vehicle" list="vehList" required autocomplete="off" placeholder="เลือกหรือพิมพ์ชนิดรถ" oninput="autoFillVehicleData(this)"></div>
+                  <div class="form-group"><label>หมายเลขทะเบียนรถ <small style="color:gray;">(ดึงให้อัตโนมัติ/พิมพ์ใหม่)</small></label><input type="text" id="licensePlate" list="plateList" placeholder="กง-1234 หรือเว้นว่าง" autocomplete="off"></div>
+              </div>
+              
+              <div class="form-group">
+                <div class="section-title" style="margin-top:10px; display:inline-block; border-bottom:none;">ปริมาณน้ำมัน (ลิตร) <small style="color:red; font-weight:normal;">*ห้ามพิมพ์เลขติดลบ</small></div>
+                <div class="grid-3">
+                  <input type="number" id="diesel" placeholder="ดีเซล" step="0.01" min="0">
+                  <input type="number" id="gas91" placeholder="แก๊สฯ 91" step="0.01" min="0">
+                  <input type="number" id="gas95" placeholder="แก๊สฯ 95" step="0.01" min="0">
+                </div>
+              </div>
+              <div class="grid-2">
+                 <button type="submit" class="primary-btn" id="btnSubmit">💾 บันทึกข้อมูลลงระบบ</button>
+                 <button type="button" class="cancel-btn" style="margin-top:10px;" onclick="document.getElementById('fuelForm').reset(); setTodayDates();">🧹 ล้างข้อมูลฟอร์ม</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="content-box no-print" style="margin-top: 30px;">
+            <div class="section-title">ประวัติทำรายการล่าสุด (20 รายการ)</div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align: left;">วันที่</th>
+                    <th style="text-align: left;">ภารกิจ (ประเภท)</th>
+                    <th style="text-align: left;">ชนิดรถ</th>
+                    <th style="text-align: left;">ทะเบียนรถ</th>
+                    <th>ดีเซล</th>
+                    <th>แก๊ส 91</th>
+                    <th>แก๊ส 95</th>
+                  </tr>
+                </thead>
+                <tbody id="recentHistoryTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="sectionRoute" style="display: none;">
+          <h2 style="font-size: 22px; text-align: left; margin-bottom: 20px;">🗺️ เครื่องมือคำนวณระยะทาง (Maps)</h2>
+          
+          <div class="content-box no-print" style="border: 2px solid var(--accent); background:#FFFBF2;">
+            <div class="section-title" style="color:var(--primary); display:block; width:100%; border-bottom:1px dashed var(--accent); margin-bottom:15px; padding-bottom:10px;">📍 คำนวณระยะทางเพื่อหาปริมาณน้ำมัน (Guideline)</div>
+            <form id="routeForm" onsubmit="handleCalculateRoute(event)">
+              <div class="grid-2">
+                 <div class="form-group"><label>จุดเริ่มต้น (ต้นทาง)</label><input type="text" id="routeOrigin" required placeholder="เช่น กรุงเทพ, อนุสาวรีย์ชัยสมรภูมิ"></div>
+                 <div class="form-group"><label>จุดหมายปลายทาง</label><input type="text" id="routeDest" required placeholder="เช่น ลพบุรี, ศูนย์ฝึกยุทธวิธี"></div>
+              </div>
+              <div class="grid-3">
+                 <div class="form-group"><label>ชนิดรถ / ยานพาหนะ</label><input type="text" id="routeVeh" list="vehList" required placeholder="เลือกหรือพิมพ์ชนิดรถ" autocomplete="off" oninput="autoFillVehicleData(this)"></div>
+                 <div class="form-group"><label>หมายเลขทะเบียน</label><input type="text" id="routePlate" list="plateList" placeholder="กง-1234"></div>
+                 <div class="form-group"><label>เกณฑ์สิ้นเปลือง (กม./ลิตร)</label><input type="number" id="routeRate" step="0.01" min="0.1" required placeholder="เช่น 8 หรือ 10" oninput="saveLastRate()"></div>
+              </div>
+              <div class="grid-2">
+                 <button type="submit" class="primary-btn" id="btnCalcRoute" style="background:var(--success);">🚀 คำนวณเส้นทาง & บันทึกประวัติ</button>
+                 <button type="button" class="cancel-btn" style="margin-top:10px;" onclick="document.getElementById('routeForm').reset(); document.getElementById('routeResultBox').style.display='none';">🧹 ล้างข้อมูลฟอร์ม</button>
+              </div>
+            </form>
+            
+            <div id="routeResultBox" style="display:none; margin-top:20px; padding:15px; background:#fff; border-radius:8px; border:1px solid var(--border-color); text-align:center;">
+               <div style="font-size:16px; color:var(--text-muted); margin-bottom:10px;">ระยะทางรวม <b id="resDistance" style="color:var(--primary); font-size:20px;">0</b> กิโลเมตร</div>
+               <div style="font-size:14px; color:var(--text-muted); margin-bottom:5px;">คำนวณตามเกณฑ์ได้: <span id="resExact">0</span> ลิตร</div>
+               <div style="font-size:18px; font-weight:bold; color:var(--danger);">ปริมาณน้ำมันที่ต้องใช้ (ปัดเศษ) = <span id="resFuel" style="font-size:26px;">0</span> ลิตร</div>
+               <div style="font-size:12px; color:gray; margin-top:5px;">*หมายเหตุ: ปัดเศษ 0.50 ขึ้นเป็นจำนวนเต็ม</div>
+            </div>
+          </div>
+
+          <div class="content-box">
+             <div class="dashboard-header no-print">
+               <div class="section-title print-title" style="margin:0;">ประวัติการค้นหาเส้นทางอ้างอิง</div>
+               <input type="text" id="searchRoute" class="search-input" placeholder="🔍 ค้นหา เส้นทาง, ชนิดรถ..." oninput="filterRouteRecords()">
+             </div>
+             
+             <div class="table-container">
+                <table>
+                   <thead>
+                      <tr>
+                         <th class="center">วันที่ค้นหา</th>
+                         <th>ต้นทาง</th>
+                         <th>ปลายทาง</th>
+                         <th>ชนิดรถ</th>
+                         <th>ทะเบียนรถ</th>
+                         <th class="center" style="background:#2C3E50;">ระยะทาง</th>
+                         <th class="center" style="background:#2C3E50;">เกณฑ์</th>
+                         <th class="center" style="background:#E74C3C;">ผลลัพธ์ (ลิตร)</th>
+                         <th class="center no-print" style="width:120px;">จัดการ</th>
+                      </tr>
+                   </thead>
+                   <tbody id="routeTableBody"></tbody>
+                </table>
+             </div>
+             <div id="routePagination" class="pagination-container no-print"></div>
+          </div>
+        </div>
+
+        <div id="sectionDashboard" style="display: none;">
+          <h2 style="font-size: 22px; text-align: left; margin-bottom: 20px;">แดชบอร์ดรายงาน</h2>
+          <button class="print-btn" onclick="window.print()">🖨️ พิมพ์รายงาน (PDF)</button>
+          <button class="export-btn no-print" onclick="exportDashboardToExcel()">📥 ดาวน์โหลด Excel</button>
+          <div id="loader" class="loader">กำลังประมวลผลข้อมูล...</div>
+          
+          <div id="dashboardContent" style="display: none;">
+            <div class="content-box">
+              <div class="section-title print-title">ยอดคงเหลือใช้ประจำ (ลิตร)</div>
+              <div class="dashboard-grid">
+                <div class="stat-card" style="border-top-color: var(--primary);"><h3>ดีเซล</h3><div class="val" id="bDiesel">0</div></div>
+                <div class="stat-card" style="border-top-color: var(--success);"><h3>แก๊ส 91</h3><div class="val" id="bGas91">0</div></div>
+                <div class="stat-card" style="border-top-color: var(--danger);"><h3>แก๊ส 95</h3><div class="val" id="bGas95">0</div></div>
+              </div>
+              <div class="section-title print-title" style="margin-top:15px;">ยอดอัตราพิกัดคงเหลือ (ลิตร)</div>
+              <div class="dashboard-grid" style="margin-bottom:0;">
+                <div class="stat-card" style="border-top-color: var(--warning);"><h3>โควตา ดีเซล</h3><div class="val" id="qDiesel">0</div></div>
+                <div class="stat-card" style="border-top-color: var(--info);"><h3>โควตา 91</h3><div class="val" id="qGas91">0</div></div>
+                <div class="stat-card" style="border-top-color: #8E44AD;"><h3>โควตา 95</h3><div class="val" id="qGas95">0</div></div>
+              </div>
+            </div>
+
+            <div class="content-box">
+              <div class="dashboard-header" style="border:none; padding:0;">
+                <div class="section-title print-title" style="margin:0;">ยอดสรุปการใช้งาน</div>
+                <select id="monthFilter" class="month-filter no-print" onchange="filterCardsByMonth()"><option value="all">รวมทั้งหมด (ตั้งแต่เริ่มต้น)</option></select>
+              </div>
+              <span id="printMonthLabel">รายงานสรุปยอด: รวมทั้งหมด</span>
+              
+              <div class="dashboard-grid">
+                <div class="stat-card" style="border-top-color: var(--primary);"><h3>ดีเซล</h3><div class="val" id="totDiesel">0</div></div>
+                <div class="stat-card" style="border-top-color: var(--success);"><h3>แก๊ส 91</h3><div class="val" id="tot91">0</div></div>
+                <div class="stat-card" style="border-top-color: var(--danger);"><h3>แก๊ส 95</h3><div class="val" id="tot95">0</div></div>
+              </div>
+
+              <div class="no-print" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:20px;">
+                 <div>
+                    <h4 style="text-align:center; color:var(--text-muted);">สรุปการใช้น้ำมันแต่ละเดือน</h4>
+                    <div class="chart-container"><canvas id="barChart"></canvas></div>
+                 </div>
+              </div>
+              
+              <div class="dashboard-header no-print" style="margin-top: 15px;">
+                 <div class="section-title" style="margin:0;">ประวัติการทำรายการ</div>
+                 <input type="text" id="searchDash" class="search-input" placeholder="🔍 ค้นหา ทะเบียน, ภารกิจ, หน่วย..." oninput="filterCardsByMonth()">
+              </div>
+              
+              <div class="table-container">
+                <table id="dashTableExport">
+                  <thead>
+                    <tr>
+                      <th style="text-align: left;">วันที่</th>
+                      <th style="text-align: left;">ภารกิจ</th>
+                      <th style="text-align: left;">หน่วย</th>
+                      <th style="text-align: left;">ชนิดรถ</th>
+                      <th style="text-align: left;">ทะเบียนรถ</th>
+                      <th>ดีเซล (ลิตร)</th>
+                      <th>แก๊ส 91 (ลิตร)</th>
+                      <th>แก๊ส 95 (ลิตร)</th>
+                      <th>ประเภท</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyTableBody"></tbody>
+                </table>
+              </div>
+              <div id="dashPagination" class="pagination-container no-print"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="sectionCredit" style="display: none;">
+          <h2 style="font-size: 22px; text-align: left; margin-bottom: 20px;">จัดการเครดิตน้ำมันที่ได้รับ</h2>
+          <div class="content-box no-print">
+            <div class="section-title">เพิ่มรายการเครดิตใหม่</div>
+            <form id="creditForm" onsubmit="submitCredit(event)">
+              <div class="grid-3">
+                 <div class="form-group"><label>รายการ</label><input type="text" id="cItem" required placeholder="ชื่อรายการเครดิต"></div>
+                 <div class="form-group"><label>ชนิดน้ำมัน</label><select id="cFuelType" required><option value="น้ำมันดีเซลหมุนเร็วธรรมดา">น้ำมันดีเซลหมุนเร็วธรรมดา</option><option value="น้ำมันแก๊สโซฮอล์ 91">น้ำมันแก๊สโซฮอล์ 91</option><option value="น้ำมันแก๊สโซฮอล์ 95">น้ำมันแก๊สโซฮอล์ 95</option></select></div>
+                 <div class="form-group"><label>เครดิตเต็ม (ลิตร)</label><input type="number" id="cTotalCredit" step="0.01" required oninput="calcRemaining('new')" min="0"></div>
+              </div>
+              <div class="grid-4">
+                 <div class="form-group"><label>เบิกแล้ว (ลิตร)</label><input type="number" id="cDrawn" step="0.01" oninput="calcRemaining('new')" min="0"></div>
+                 <div class="form-group"><label>บัญชีคุมจ่ายแล้ว</label><input type="number" id="cAcctPaid" step="0.01" min="0"></div>
+                 <div class="form-group"><label>ค้างจ่าย</label><input type="number" id="cPending" step="0.01" min="0"></div>
+                 <div class="form-group"><label>รับแล้ว (ลิตร)</label><input type="number" id="cReceived" step="0.01" min="0"></div>
+              </div>
+              <div class="grid-2">
+                 <div class="form-group"><label>เครดิตคงเหลือ</label><input type="number" id="cRemaining" step="0.01" readonly style="color:var(--danger); font-weight:bold; background:#FDEBD0;" placeholder="คำนวณอัตโนมัติ (เครดิต - เบิกแล้ว)"></div>
+                 <div class="form-group"><label>สถานะ</label><select id="cStatus" required></select></div>
+              </div>
+              <button type="submit" class="primary-btn" id="btnSubmitCredit">เพิ่มรายการเครดิต</button>
+            </form>
+          </div>
+
+          <div class="content-box">
+             <div class="dashboard-header no-print">
+               <div class="section-title print-title" style="margin:0;">ทะเบียนเครดิตน้ำมัน</div>
+             </div>
+             <button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์ทะเบียน (PDF)</button>
+             <button class="export-btn no-print" onclick="exportCreditToExcel()">📥 ดาวน์โหลด Excel</button>
+             <div class="table-container">
+                <table id="creditTableExport">
+                   <thead>
+                      <tr>
+                         <th class="center">ลำดับ</th>
+                         <th>รายการ</th>
+                         <th class="center">ชนิดน้ำมัน</th>
+                         <th class="center" style="color:var(--info);">เครดิต</th>
+                         <th class="center" style="color:var(--info);">เบิกแล้ว</th>
+                         <th class="center">บัญชีคุมจ่ายแล้ว</th>
+                         <th class="center">ค้างจ่าย</th>
+                         <th class="center">รับแล้ว</th>
+                         <th class="center" style="color:var(--danger);">เครดิตคงเหลือ</th>
+                         <th class="center">สถานะ</th>
+                         <th class="center no-print">จัดการ</th>
+                      </tr>
+                   </thead>
+                   <tbody id="creditTableBody"></tbody>
+                </table>
+             </div>
+             <div id="creditPagination" class="pagination-container no-print"></div>
+          </div>
+        </div>
+        
+        <div id="sectionEquipOil" style="display: none;">
+          <h2 style="font-size: 22px; text-align: left; margin-bottom: 20px;">รายการน้ำมันอุปกรณ์</h2>
+          <div class="content-box">
+             <div class="section-title print-title" style="display:block; width:100%; border-bottom:1px solid var(--accent); margin-bottom:15px; padding-bottom:10px;">ยอดสรุปคงเหลือน้ำมันอุปกรณ์</div>
+             <div id="equipOilSummaryCards" class="dashboard-grid" style="margin-bottom: 5px;"></div>
+          </div>
+          <div class="content-box no-print" style="border: 2px solid var(--warning); background:#FFFBF2;">
+             <div class="section-title" style="color:var(--warning); display:block; width:100%; border-bottom:1px dashed var(--warning); margin-bottom:15px; padding-bottom:10px;">🚨 แจ้งเตือนรอบบำรุงรักษารถ (PM น้ำมันเครื่อง)</div>
+             <div class="table-container">
+                <table>
+                   <thead>
+                      <tr style="background:var(--warning);">
+                         <th style="color:#000; text-align:left;">ชนิดรถ</th>
+                         <th style="color:#000;">เปลี่ยนล่าสุด</th>
+                         <th style="color:#000;">รอบถัดไป (ประมาณการ)</th>
+                         <th style="color:#000;">สถานะ</th>
+                      </tr>
+                   </thead>
+                   <tbody id="pmAlertsTableBody"></tbody>
+                </table>
+             </div>
+          </div>
+          <div class="content-box no-print">
+            <div class="section-title">เบิก-จ่าย น้ำมันอุปกรณ์</div>
+            <form id="equipOilForm" onsubmit="submitEquipOil(event)">
+              <div class="grid-3">
+                 <div class="form-group"><label>วันที่</label><input type="date" id="eDate" required></div>
+                 <div class="form-group"><label>รายการ</label><input type="text" id="eItem" required placeholder="ชื่อรายการ/ภารกิจ"></div>
+                 <div class="form-group">
+                    <label>ชนิดน้ำมันอุปกรณ์</label>
+                    <select id="eOilType" required onchange="checkNewOilType(this.value, false); updateEquipFormBalance();"></select>
+                    <div id="newOilGroup" style="display:none; margin-top:10px; border:1px dashed #ccc; padding:10px; border-radius:6px; background:#fafafa;">
+                       <input type="text" id="eNewOilType" placeholder="พิมพ์ชื่อน้ำมันชนิดใหม่...">
+                       <select id="eNewOilUnit" style="margin-top:8px;"><option value="ลิตร">ลิตร</option><option value="กก.">กก.</option><option value="แกลลอน">แกลลอน</option><option value="ถัง">ถัง</option><option value="กระป๋อง">กระป๋อง</option></select>
+                    </div>
+                 </div>
+              </div>
+              <div class="grid-3">
+                 <div class="form-group"><label>ยอดเต็ม (รับเพิ่ม)</label><input type="number" id="eTotal" step="0.01" min="0" oninput="updateEquipFormBalance()"></div>
+                 <div class="form-group"><label>ยอดจ่าย (หักออก)</label><input type="number" id="ePaid" step="0.01" min="0" oninput="updateEquipFormBalance()"></div>
+                 <div class="form-group"><label>คงเหลือสุทธิ</label><input type="number" id="eRemaining" step="0.01" readonly style="color:var(--primary); font-weight:bold; background:#E2E8F0;" placeholder="(อัตโนมัติ)"></div>
+              </div>
+              <div class="grid-3">
+                 <div class="form-group"><label>ชนิดรถที่นำไปใส่ <small style="color:gray;">(เลือกหรือพิมพ์ใหม่)</small></label><input type="text" id="eVehicle" list="vehList" required autocomplete="off" placeholder="เลือกหรือพิมพ์ชนิดรถ" oninput="autoFillVehicleData(this)"></div>
+                 <div class="form-group"><label>หมายเลขทะเบียนรถ <small style="color:gray;">(ดึงให้อัตโนมัติ/พิมพ์ใหม่)</small></label><input type="text" id="eLicensePlate" list="plateList" placeholder="กง-1234 หรือเว้นว่าง" autocomplete="off"></div>
+                 <div class="form-group"><label>ชื่อผู้รับ สป.</label><input type="text" id="eRecipient" required></div>
+              </div>
+              <div class="grid-2">
+                 <button type="submit" class="primary-btn" id="btnSubmitEquipOil">💾 บันทึกรายการ</button>
+                 <button type="button" class="cancel-btn" style="margin-top:10px;" onclick="document.getElementById('equipOilForm').reset(); setTodayDates();">🧹 ล้างข้อมูลฟอร์ม</button>
+              </div>
+            </form>
+          </div>
+          <div class="content-box">
+             <div class="dashboard-header no-print">
+               <div class="section-title print-title" style="margin:0;">ประวัติรายการน้ำมันอุปกรณ์</div>
+               <input type="text" id="searchEquip" class="search-input" placeholder="🔍 ค้นหา ทะเบียน, รายการ, ผู้รับ..." oninput="filterEquipOil()">
+             </div>
+             
+             <button class="print-btn no-print" onclick="window.print()">🖨️ พิมพ์รายการ (PDF)</button>
+             <button class="export-btn no-print" onclick="exportEquipToExcel()">📥 ดาวน์โหลด Excel</button>
+             <div class="table-container">
+                <table id="equipTableExport">
+                   <thead>
+                      <tr>
+                         <th class="center">ลำดับ</th>
+                         <th>วันที่</th>
+                         <th>รายการ</th>
+                         <th class="center">ชนิดน้ำมัน</th>
+                         <th class="center">ยอดเต็ม</th>
+                         <th class="center">ยอดจ่าย</th>
+                         <th class="center">คงเหลือสุทธิ</th>
+                         <th>ชนิดรถ</th>
+                         <th>ทะเบียนรถ</th>
+                         <th>ผู้รับ สป.</th>
+                         <th class="center no-print">จัดการ</th>
+                      </tr>
+                   </thead>
+                   <tbody id="equipOilTableBody"></tbody>
+                </table>
+             </div>
+             <div id="equipOilPagination" class="pagination-container no-print"></div>
+          </div>
+        </div>
+
+        <div id="sectionAdmin" style="display: none;">
+          <h2 style="font-size: 22px; text-align: left; margin-bottom: 20px;">ผู้ดูแลระบบ (Administrator)</h2>
+          <div class="admin-subtab">
+            <button class="approve-btn" id="btnAdminUsers" onclick="switchAdminTab('users')">👥 จัดการผู้ใช้</button>
+            <button class="approve-btn" id="btnAdminRecords" style="background:var(--warning);" onclick="switchAdminTab('records')">✏️ แก้ไขประวัติ</button>
+            <button class="approve-btn" id="btnAdminQuota" style="background:var(--info);" onclick="switchAdminTab('quota')">⚙️ ตั้งค่าโควตากองกลาง</button>
+            <button class="approve-btn" id="btnAdminTheme" style="background:var(--text-muted);" onclick="switchAdminTab('theme')">🎨 ตั้งค่าระบบ</button>
+            <button class="approve-btn" id="btnAdminSystem" style="background:var(--danger);" onclick="switchAdminTab('system')">🛠️ เครื่องมือแอดมิน</button>
+          </div>
+          
+          <div id="adminAreaUsers" class="content-box">
+            <div class="section-title">จัดการสถานะผู้ใช้งาน</div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th style="text-align: left;">Username</th><th style="text-align: left;">สถานะ</th><th style="text-align: left;">สิทธิ์/จัดการ</th></tr></thead>
+                <tbody id="adminTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="adminAreaRecords" class="content-box" style="display:none;">
+            <div class="dashboard-header no-print">
+               <div class="section-title print-title" style="margin:0;">ประวัติรายการรับ-จ่ายทั้งหมด</div>
+               <input type="text" id="searchAdmin" class="search-input" placeholder="🔍 ค้นหา ทะเบียน, ภารกิจ, หน่วย..." oninput="filterAdminRecords()">
+            </div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="text-align: left;">วันที่</th>
+                    <th style="text-align: left;">ภารกิจ (ประเภท)</th>
+                    <th style="text-align: left;">หน่วย</th>
+                    <th style="text-align: left;">ชนิดรถ</th>
+                    <th style="text-align: left;">ทะเบียนรถ</th>
+                    <th>ดีเซล (ลิตร)</th>
+                    <th>แก๊ส 91 (ลิตร)</th>
+                    <th>แก๊ส 95 (ลิตร)</th>
+                    <th style="text-align: center;">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="adminRecordsTableBody"></tbody>
+              </table>
+            </div>
+            <div id="adminRecordsPagination" class="pagination-container no-print"></div>
+          </div>
+
+          <div id="adminAreaQuota" class="content-box" style="display:none;">
+            <form onsubmit="handleSaveQuota(event)">
+              <div class="section-title">1. ตั้งค่ายอดคงเหลือใช้ประจำ (ส่วนกลาง)</div>
+              <div class="grid-3" style="margin-bottom:20px;">
+                <div class="form-group"><label>ดีเซล</label><input type="number" id="adminBDiesel" step="0.01" required></div>
+                <div class="form-group"><label>แก๊ส 91</label><input type="number" id="adminBGas91" step="0.01" required></div>
+                <div class="form-group"><label>แก๊ส 95</label><input type="number" id="adminBGas95" step="0.01" required></div>
+              </div>
+              <div class="section-title">2. ตั้งค่ายอดอัตราพิกัด โควตา (ส่วนกลาง)</div>
+              <div class="grid-3">
+                <div class="form-group"><label>โควตา ดีเซล</label><input type="number" id="adminQDiesel" step="0.01" required></div>
+                <div class="form-group"><label>โควตา 91</label><input type="number" id="adminQGas91" step="0.01" required></div>
+                <div class="form-group"><label>โควตา 95</label><input type="number" id="adminQGas95" step="0.01" required></div>
+              </div>
+              <button type="submit" class="primary-btn" id="btnSaveQuota">บันทึกโควตาส่วนกลาง</button>
+            </form>
+          </div>
+
+          <div id="adminAreaTheme" class="content-box" style="display:none;">
+            <div class="section-title">🎨 ปรับแต่งสีและตั้งค่าระบบ (Master Data)</div>
+            <form onsubmit="handleSaveTheme(event)">
+              <div class="section-title" style="margin-top:15px; border-color:var(--danger);">1. จัดการข้อมูลพื้นฐาน (สายงาน/หน่วย)</div>
+              <div class="form-group">
+                  <label>รายชื่อสายงาน/หน่วย/กองร้อย <small style="color:red;">(ใช้ลูกน้ำ , คั่น)</small></label>
+                  <textarea id="themeDepts" rows="3" placeholder="ร้อย.บก., ร้อย.1, ร้อย.2"></textarea>
+              </div>
+
+              <div class="section-title" style="margin-top:25px; border-color:var(--danger);">2. จัดการฐานข้อมูลรถยนต์ (Auto-fill)</div>
+              <div id="vehicleListContainer"></div>
+              <button type="button" class="approve-btn" onclick="addVehicleRow('', '', '')" style="margin-bottom: 15px; background:var(--info); width:auto;">+ เพิ่มรถยนต์ใหม่</button>
+              <input type="hidden" id="themeVehicleSettings">
+
+              <div class="section-title" style="margin-top:25px;">3. จัดการชนิดน้ำมันอุปกรณ์ และ ยอดตั้งต้น</div>
+              <div id="equipOilListContainer"></div>
+              <button type="button" class="approve-btn" onclick="addEquipOilRow('', 'ลิตร', 0)" style="margin-bottom: 15px; background:var(--info); width:auto;">+ เพิ่มน้ำมันอุปกรณ์ใหม่</button>
+              <input type="hidden" id="themeEquipOilSettings">
+
+              <div class="section-title" style="margin-top:25px;">4. ตั้งค่าตัวเลือกสถานะ (เครดิตน้ำมัน)</div>
+              <div id="statusListContainer"></div>
+              <button type="button" class="approve-btn" onclick="addStatusRow('', '#122840')" style="margin-bottom: 15px; background:var(--info); width:auto;">+ เพิ่มสถานะใหม่</button>
+              <input type="hidden" id="themeCreditStatuses">
+
+              <div class="section-title" style="margin-top:25px;">5. สีและพื้นหลังของแอปพลิเคชัน</div>
+              <div class="grid-4">
+                <div class="form-group"><label style="font-size:12px;">แถบหลัก (Primary)</label><input type="color" id="themePrimary"></div>
+                <div class="form-group"><label style="font-size:12px;">เส้นใต้ (Accent)</label><input type="color" id="themeAccent"></div>
+                <div class="form-group"><label style="font-size:12px;">พื้นหลังกล่อง (Card)</label><input type="color" id="themeBgCard"></div>
+                <div class="form-group"><label style="font-size:12px;">อักษรหลัก (Text)</label><input type="color" id="themeTextMain"></div>
+              </div>
+              <div class="grid-3">
+                <div class="form-group">
+                  <label>เลือกรูปแบบพื้นหลัง</label>
+                  <select id="themeBgType" onchange="toggleBgInput()"><option value="camo">ลายพราง ทบ.</option><option value="color">สีพื้นเรียบ</option><option value="url">รูปภาพ (URL)</option></select>
+                </div>
+                <div class="form-group" id="bgValueGroup" style="display:none; grid-column: span 2;"><label id="bgValueLabel">ตั้งค่าสี หรือ Link รูปภาพ</label><input type="text" id="themeBgValue"></div>
+              </div>
+              
+              <div class="section-title" style="margin-top:25px; border-color:var(--danger);">6. โหมดปิดปรับปรุงระบบ (Maintenance Mode)</div>
+              <div class="grid-2">
+                 <div class="form-group">
+                   <label>สถานะระบบปัจจุบัน</label>
+                   <select id="themeMaintenanceMode">
+                      <option value="false">🟢 เปิดใช้งานปกติ (Online)</option>
+                      <option value="true">🔴 ปิดปรับปรุง (Maintenance)</option>
+                   </select>
+                   <small style="color:var(--danger); font-weight:bold;">เมื่อสลับเป็นปิดปรับปรุง ผู้ใช้ทั่วไปจะถูกบังคับออกจากระบบทันที</small>
+                 </div>
+              </div>
+              <button type="submit" class="primary-btn" id="btnSaveTheme">บันทึกการตั้งค่าทั้งหมด</button>
+            </form>
+          </div>
+
+          <!-- 📍 กล่องเครื่องมือแอดมินที่มีปุ่มสำรองข้อมูล -->
+          <div id="adminAreaSystem" class="content-box" style="display:none; background:#FDEDEC; border-color:var(--danger);">
+             <div class="section-title" style="color:var(--info); border-color:var(--info);">🤖 หุ่นยนต์สำรองข้อมูลอัตโนมัติ</div>
+             <p style="font-size:14px; color:var(--text-main);">
+                เปิดให้ระบบทำการคัดลอกไฟล์ฐานข้อมูลทั้งชุดไปเก็บไว้ใน Google Drive ของคุณโดยอัตโนมัติ (เวลา 02:00 น. ของวันที่ 1 ทุกเดือน)
+             </p>
+             <div style="display:flex; align-items:center; gap:10px; margin-bottom: 30px; flex-wrap:wrap;">
+                <button type="button" class="approve-btn" onclick="toggleAutoBackup(true)" style="background:var(--success); font-size:14px;">▶️ เปิดการสำรองข้อมูล</button>
+                <button type="button" class="cancel-btn" onclick="toggleAutoBackup(false)" style="margin-top:0; width:auto; padding:8px 12px; font-size:14px;">⏸️ ปิดการทำงาน</button>
+                <span id="autoBackupStatusTxt" style="font-weight:bold; margin-left:10px; color:var(--text-main);">สถานะ: กำลังตรวจสอบ...</span>
+             </div>
+
+             <div class="section-title" style="color:var(--danger); border-color:var(--danger);">⚠️ เครื่องมือล้างข้อมูล (Danger Zone)</div>
+             <p style="font-size:14px; color:var(--text-main);">
+                ฟังก์ชันนี้สำหรับ <b>"แอดมินสูงสุด"</b> เพื่อใช้เคลียร์ข้อมูลทดสอบ หรือขึ้นรอบปีงบประมาณใหม่ <br>
+                ระบบจะลบประวัติการรับ-จ่ายน้ำมันทั้งหมด (จะมีการสร้างชีตสำรอง Backup ไว้ให้ก่อนลบเสมอ)
+             </p>
+             <button type="button" class="primary-btn" style="background:var(--danger); width:100%; max-width:300px;" onclick="confirmWipeData()">🚨 ล้างข้อมูลประวัติน้ำมันทั้งหมด</button>
+          </div>
+        </div>
+
+      </div> 
+    </div> 
+  </div> 
+
+  <!-- Modals สำหรับแก้ไข -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-content">
+      <div class="section-title" style="display:block; text-align:center; font-size:18px;">✏️ แก้ไขข้อมูลรายการ</div>
+      <form id="editForm" onsubmit="submitEditForm(event)">
+        <input type="hidden" id="editRowIndex">
+        <div class="form-group"><label>วัน/เดือน/ปี</label><input type="date" id="editDate" required></div>
+        <div class="form-group"><label>รายการ/ภาระกิจ</label><input type="text" id="editMission" required></div>
+        <div class="form-group">
+          <label>ประเภท</label>
+          <select id="editType" required>
+            <option value="จ่าย">จ่าย (หักยอดประจำ)</option><option value="รับ">รับ (เพิ่มยอดประจำ)</option>
+            <option value="ยืมอัตราพิกัด">ยืมอัตราพิกัด (ดึงโควตามาเพิ่มประจำวัน)</option>
+            <option value="เติมอัตราพิกัด">เติมอัตราพิกัด (ดึงประจำวันคืนโควตา)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>สายงาน/กองร้อย</label><input type="text" id="editDepartment" list="deptList" required autocomplete="off"></div>
+        <div class="form-group">
+          <label>ปริมาณน้ำมัน (ลิตร)</label>
+          <div class="grid-3"><input type="number" id="editDiesel" placeholder="ดีเซล" step="0.01" min="0"><input type="number" id="editGas91" placeholder="แก๊สฯ 91" step="0.01" min="0"><input type="number" id="editGas95" placeholder="แก๊สฯ 95" step="0.01" min="0"></div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group"><label>ชนิดรถ / เครื่องมือ</label><input type="text" id="editVehicle" list="vehList" autocomplete="off" oninput="autoFillVehicleData(this)"></div>
+            <div class="form-group"><label>หมายเลขทะเบียนรถ</label><input type="text" id="editLicensePlate" list="plateList" autocomplete="off"></div>
+        </div>
+        <button type="submit" class="primary-btn" id="btnSaveEdit">อัปเดตข้อมูล</button>
+        <div class="grid-2">
+           <button type="button" class="cancel-btn" style="background:var(--danger);" onclick="confirmDelete('fuel')">🗑️ ลบรายการนี้</button>
+           <button type="button" class="cancel-btn" onclick="closeEditModal()">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editCreditModal">
+    <div class="modal-content">
+      <div class="section-title" style="display:block; text-align:center; font-size:18px;">✏️ แก้ไขเครดิตน้ำมัน</div>
+      <form id="editCreditForm" onsubmit="submitEditCreditForm(event)">
+        <input type="hidden" id="editCRowIndex">
+        <div class="grid-2">
+           <div class="form-group"><label>รายการ</label><input type="text" id="editCItem" required></div>
+           <div class="form-group"><label>ชนิดน้ำมัน</label><select id="editCFuelType" required><option value="น้ำมันดีเซลหมุนเร็วธรรมดา">น้ำมันดีเซลหมุนเร็วธรรมดา</option><option value="น้ำมันแก๊สโซฮอล์ 91">น้ำมันแก๊สโซฮอล์ 91</option><option value="น้ำมันแก๊สโซฮอล์ 95">น้ำมันแก๊สโซฮอล์ 95</option></select></div>
+        </div>
+        <div class="grid-2">
+           <div class="form-group"><label>เครดิตเต็ม (ลิตร)</label><input type="number" id="editCTotalCredit" step="0.01" required oninput="calcRemaining('edit')" min="0"></div>
+           <div class="form-group"><label>สถานะ</label><select id="editCStatus" required></select></div>
+        </div>
+        <div class="grid-2">
+           <div class="form-group"><label>เบิกแล้ว (ลิตร)</label><input type="number" id="editCDrawn" step="0.01" oninput="calcRemaining('edit')" min="0"></div>
+           <div class="form-group"><label>เครดิตคงเหลือ</label><input type="number" id="editCRemaining" step="0.01" readonly style="color:var(--danger); font-weight:bold; background:#FDEBD0;"></div>
+        </div>
+        <div class="grid-3">
+           <div class="form-group"><label>บัญชีคุมจ่ายแล้ว</label><input type="number" id="editCAcct" step="0.01" min="0"></div>
+           <div class="form-group"><label>ค้างจ่าย</label><input type="number" id="editCPending" step="0.01" min="0"></div>
+           <div class="form-group"><label>รับแล้ว (ลิตร)</label><input type="number" id="editCRecv" step="0.01" min="0"></div>
+        </div>
+        <button type="submit" class="primary-btn" id="btnSaveEditCredit">อัปเดตข้อมูลเครดิต</button>
+        <div class="grid-2">
+           <button type="button" class="cancel-btn" style="background:var(--danger);" onclick="confirmDelete('credit')">🗑️ ลบรายการนี้</button>
+           <button type="button" class="cancel-btn" onclick="closeEditCreditModal()">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editEquipOilModal">
+    <div class="modal-content">
+      <div class="section-title" style="display:block; text-align:center; font-size:18px;">✏️ แก้ไขรายการน้ำมันอุปกรณ์</div>
+      <form id="editEquipOilForm" onsubmit="submitEditEquipOilForm(event)">
+        <input type="hidden" id="editERowIndex">
+        <div class="grid-3">
+           <div class="form-group"><label>วันที่</label><input type="date" id="editEDate" required></div>
+           <div class="form-group"><label>รายการ</label><input type="text" id="editEItem" required></div>
+           <div class="form-group"><label>ชนิดน้ำมันอุปกรณ์</label><input type="text" id="editEOilType" readonly></div>
+        </div>
+        <div class="grid-3">
+           <div class="form-group"><label>ยอดเต็ม</label><input type="number" id="editETotal" step="0.01" min="0" oninput="updateEquipFormBalance(true)"></div>
+           <div class="form-group"><label>ยอดจ่าย</label><input type="number" id="editEPaid" step="0.01" min="0" oninput="updateEquipFormBalance(true)"></div>
+           <div class="form-group"><label>คงเหลือสุทธิ</label><input type="number" id="editERemaining" step="0.01" readonly style="color:var(--primary); font-weight:bold; background:#E2E8F0;"></div>
+        </div>
+        <div class="grid-3">
+           <div class="form-group"><label>ชนิดรถที่นำไปใส่</label><input type="text" id="editEVehicle" list="vehList" autocomplete="off" oninput="autoFillVehicleData(this)"></div>
+           <div class="form-group"><label>หมายเลขทะเบียนรถ</label><input type="text" id="editELicensePlate" list="plateList" autocomplete="off"></div>
+           <div class="form-group"><label>ชื่อผู้รับ สป.</label><input type="text" id="editERecipient"></div>
+        </div>
+        <button type="submit" class="primary-btn" id="btnSaveEditEquipOil">อัปเดตข้อมูล</button>
+        <div class="grid-2">
+           <button type="button" class="cancel-btn" style="background:var(--danger);" onclick="confirmDelete('equipOil')">🗑️ ลบรายการนี้</button>
+           <button type="button" class="cancel-btn" onclick="closeEditEquipOilModal()">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let globalDashboardData = null; 
+    let globalAdminRecords = []; 
+    let globalCreditRecords = [];
+    let globalCreditStatuses = [];
+    let globalEquipOilSettings = [];
+    let globalEquipOilRecords = [];
+    let globalRouteRecords = [];
+    let globalVehicleSettings = [];
+    let equipSummaryMap = {}; 
+    let heartbeatInterval;
+    let chartBarInst = null;
+    
+    let isDarkMode = localStorage.getItem('armyDarkMode') === 'true';
+    function applyDarkModeLogic() {
+        const body = document.body;
+        const mBtn = document.getElementById('themeToggleBtnMobile');
+        const sBtn = document.getElementById('themeToggleBtnSide');
+        if(isDarkMode) {
+            body.classList.add('dark-mode');
+            if(mBtn) mBtn.innerText = '🌙';
+            if(sBtn) sBtn.innerText = '🌙';
+            Chart.defaults.color = '#94A3B8';
+        } else {
+            body.classList.remove('dark-mode');
+            if(mBtn) mBtn.innerText = '☀️';
+            if(sBtn) sBtn.innerText = '☀️';
+            Chart.defaults.color = '#666';
+        }
+        if(chartBarInst && globalDashboardData) renderCharts(globalDashboardData); 
+    }
+    
+    function toggleDarkMode() {
+        isDarkMode = !isDarkMode;
+        localStorage.setItem('armyDarkMode', isDarkMode);
+        applyDarkModeLogic();
+    }
+
+    const ROWS_PER_PAGE = 20;
+    let filteredDashHistory = [];
+    let filteredEquipOilRecords = [];
+    let filteredAdminRecords = [];
+    let filteredRouteRecords = [];
+    
+    let currentPageDash = 1;
+    let currentPageCredit = 1;
+    let currentPageEquip = 1;
+    let currentPageAdmin = 1;
+    let currentPageRoute = 1;
+    
+    let idleTime = 0;
+    function resetIdleTime() { idleTime = 0; }
+    document.addEventListener("mousemove", resetIdleTime, false);
+    document.addEventListener("mousedown", resetIdleTime, false);
+    document.addEventListener("keypress", resetIdleTime, false);
+    document.addEventListener("touchmove", resetIdleTime, false);
+
+    setInterval(function() {
+        if(document.getElementById('appWrapper').style.display === 'block') {
+            idleTime++;
+            if (idleTime >= 15) { handleLogout(true); }
+        }
+    }, 60000); 
+
+    function checkExpired(res) {
+        if(typeof res === "string") {
+            if(res.includes("MAINTENANCE_ACTIVE")) { forceMaintenanceLogout(); return true; }
+            if(res.includes("เซสชันหมดอายุ")) { handleLogout(true); return true; }
+        }
+        return false;
+    }
+
+    function forceMaintenanceLogout() {
+        localStorage.removeItem("armyUser"); localStorage.removeItem("armyRole"); localStorage.removeItem("armyToken");
+        sessionStorage.removeItem("armyUser"); sessionStorage.removeItem("armyRole"); sessionStorage.removeItem("armyToken");
+        if(heartbeatInterval) clearInterval(heartbeatInterval);
+        document.getElementById('appWrapper').style.display = 'none';
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('registerBox').style.display = 'none';
+        
+        let now = new Date();
+        let thDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        let thTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        let mtTimeEl = document.getElementById('maintenanceTime');
+        if(mtTimeEl) mtTimeEl.innerText = `[ ข้อมูล ณ วันที่ ${thDate} เวลา ${thTime} น. ]`;
+
+        Swal.close(); 
+        document.getElementById('maintenanceBox').style.display = 'block';
+    }
+
+    function showLoadingAlert() {
+        Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    }
+
+    function setTodayDates() {
+        const today = new Date();
+        const offset = today.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(today - offset)).toISOString().split('T')[0];
+        if(document.getElementById('date')) document.getElementById('date').value = localISOTime;
+        if(document.getElementById('eDate')) document.getElementById('eDate').value = localISOTime;
+    }
+
+    function saveLastRate() {
+        let rate = document.getElementById('routeRate').value;
+        if(rate) localStorage.setItem("lastFuelRate", rate);
+    }
+
+    function autoFillVehicleData(el) {
+        let val = el.value;
+        let v = globalVehicleSettings.find(item => item.name === val);
+        if(v) {
+            if(el.id === 'vehicle' && document.getElementById('licensePlate') && v.plate) document.getElementById('licensePlate').value = v.plate;
+            if(el.id === 'eVehicle' && document.getElementById('eLicensePlate') && v.plate) document.getElementById('eLicensePlate').value = v.plate;
+            if(el.id === 'editVehicle' && document.getElementById('editLicensePlate') && v.plate) document.getElementById('editLicensePlate').value = v.plate;
+            if(el.id === 'routeVeh') {
+                if(document.getElementById('routePlate') && v.plate) document.getElementById('routePlate').value = v.plate;
+                if(document.getElementById('routeRate') && v.rate) document.getElementById('routeRate').value = v.rate;
+            }
+        }
+    }
+
+    function updatePlateList() {
+        let plates = new Set();
+        if(globalDashboardData && globalDashboardData.history) {
+            globalDashboardData.history.forEach(r => { 
+                if(r.licensePlate) { let p = String(r.licensePlate).trim(); if(p !== "") plates.add(p); }
+            });
+        }
+        if(globalEquipOilRecords) {
+            globalEquipOilRecords.forEach(r => { 
+                if(r.licensePlate) { let p = String(r.licensePlate).trim(); if(p !== "") plates.add(p); }
+            });
+        }
+        let list = document.getElementById('plateList');
+        if(list) {
+            list.innerHTML = "";
+            plates.forEach(p => { list.innerHTML += `<option value="${p}">`; });
+        }
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarBackdrop').classList.toggle('show');
+    }
+
+    function fmt(num, showZero = false) {
+      let n = Number(num) || 0;
+      if (n === 0 && !showZero) return "-";
+      return n.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function fmtL(num, unit, showZero = false) {
+      let n = Number(num) || 0;
+      if (n === 0 && !showZero) return "-";
+      return n.toLocaleString('th-TH', {maximumFractionDigits: 2}) + " " + (unit || "");
+    }
+
+    function renderPaginationControls(containerId, totalItems, currentPage, funcName) {
+        let container = document.getElementById(containerId);
+        if(!container) return;
+        let totalPages = Math.ceil(totalItems / ROWS_PER_PAGE);
+        if(totalPages <= 1) { container.innerHTML = ""; return; }
+
+        let html = '';
+        if(currentPage > 1) { html += `<button onclick="${funcName}(${currentPage - 1})">« ก่อนหน้า</button>`; }
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+        for(let i = startPage; i <= endPage; i++) {
+            html += `<button class="${i === currentPage ? 'active' : ''}" onclick="${funcName}(${i})">${i}</button>`;
+        }
+        if(currentPage < totalPages) { html += `<button onclick="${funcName}(${currentPage + 1})">ถัดไป »</button>`; }
+        container.innerHTML = html;
+    }
+
+    function calcRemaining(type) {
+        if(type === 'new') {
+            let credit = parseFloat(document.getElementById("cTotalCredit").value) || 0;
+            let drawn = parseFloat(document.getElementById("cDrawn").value) || 0;
+            document.getElementById("cRemaining").value = (credit - drawn).toFixed(2);
+        } else if (type === 'edit') {
+            let credit = parseFloat(document.getElementById("editCTotalCredit").value) || 0;
+            let drawn = parseFloat(document.getElementById("editCDrawn").value) || 0;
+            document.getElementById("editCRemaining").value = (credit - drawn).toFixed(2);
+        }
+    }
+
+    function updateEquipFormBalance(isEdit = false) {
+        if (!isEdit) {
+            let oilType = document.getElementById("eOilType").value;
+            let currentBal = equipSummaryMap[oilType] || 0;
+            if(oilType === "+new") currentBal = 0;
+            let t = parseFloat(document.getElementById('eTotal').value) || 0;
+            let p = parseFloat(document.getElementById('ePaid').value) || 0;
+            document.getElementById('eRemaining').value = (currentBal + t - p).toFixed(2);
+        } else {
+            let oilType = document.getElementById("editEOilType").value;
+            let t = parseFloat(document.getElementById('editETotal').value) || 0;
+            let p = parseFloat(document.getElementById('editEPaid').value) || 0;
+            let rowIdx = document.getElementById("editERowIndex").value;
+            let oldRec = globalEquipOilRecords.find(r => r.rowIndex == rowIdx);
+            let baseBal = equipSummaryMap[oilType] || 0;
+            if (oldRec) { baseBal = baseBal - (Number(oldRec.total)||0) + (Number(oldRec.paid)||0); }
+            document.getElementById('editERemaining').value = (baseBal + t - p).toFixed(2);
+        }
+    }
+
+    function renderStatusSettings(statuses) {
+        let container = document.getElementById('statusListContainer');
+        container.innerHTML = '';
+        statuses.forEach(s => addStatusRow(s.name, s.color));
+    }
+    
+    function addStatusRow(name, color) {
+        let container = document.getElementById('statusListContainer');
+        let div = document.createElement('div');
+        div.className = 'grid-3 status-row';
+        div.style.marginBottom = '10px';
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;"><input type="text" class="status-name" placeholder="ชื่อสถานะ" value="${name}" required></div>
+            <div class="form-group" style="margin-bottom:0;"><input type="color" class="status-color" value="${color}"></div>
+            <div class="form-group" style="margin-bottom:0;"><button type="button" class="cancel-btn" style="margin-top:0; background:var(--danger);" onclick="this.parentElement.parentElement.remove()">ลบ</button></div>
+        `;
+        container.appendChild(div);
+    }
+
+    function renderEquipOilSettings(equips) {
+        let container = document.getElementById('equipOilListContainer');
+        container.innerHTML = '';
+        equips.forEach(e => addEquipOilRow(e.name, e.unit, e.initial));
+    }
+
+    function addEquipOilRow(name, unit, initial) {
+        let container = document.getElementById('equipOilListContainer');
+        let div = document.createElement('div');
+        div.className = 'grid-4 equip-row';
+        div.style.marginBottom = '10px';
+        let unitOpts = ['ลิตร', 'กก.', 'แกลลอน', 'ถัง', 'กระป๋อง'].map(u => `<option value="${u}" ${u===unit?'selected':''}>${u}</option>`).join('');
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;"><input type="text" class="equip-name" placeholder="ชื่อน้ำมันอุปกรณ์" value="${name}" required></div>
+            <div class="form-group" style="margin-bottom:0;"><select class="equip-unit">${unitOpts}</select></div>
+            <div class="form-group" style="margin-bottom:0;"><input type="number" class="equip-initial" placeholder="ยอดตั้งต้น" value="${initial}" step="0.01" required></div>
+            <div class="form-group" style="margin-bottom:0;"><button type="button" class="cancel-btn" style="margin-top:0; background:var(--danger);" onclick="this.parentElement.parentElement.remove()">ลบ</button></div>
+        `;
+        container.appendChild(div);
+    }
+
+    function renderVehicleSettings(vehicles) {
+        let container = document.getElementById('vehicleListContainer');
+        container.innerHTML = '';
+        vehicles.forEach(v => addVehicleRow(v.name, v.plate, v.rate));
+    }
+
+    function addVehicleRow(name, plate, rate) {
+        let container = document.getElementById('vehicleListContainer');
+        let div = document.createElement('div');
+        div.className = 'grid-4 veh-row';
+        div.style.marginBottom = '10px';
+        div.innerHTML = `
+            <div class="form-group" style="margin-bottom:0;"><input type="text" class="veh-name" placeholder="ชื่อรถ/ชนิด" value="${name}" required></div>
+            <div class="form-group" style="margin-bottom:0;"><input type="text" class="veh-plate" placeholder="ทะเบียน (ถ้ามี)" value="${plate}"></div>
+            <div class="form-group" style="margin-bottom:0;"><input type="number" class="veh-rate" placeholder="กม./ลิตร" step="0.01" value="${rate}" min="0.1"></div>
+            <div class="form-group" style="margin-bottom:0;"><button type="button" class="cancel-btn" style="margin-top:0; background:var(--danger);" onclick="this.parentElement.parentElement.remove()">ลบ</button></div>
+        `;
+        container.appendChild(div);
+    }
+
+    function checkNewOilType(val, isEdit) {
+        if (!isEdit) { document.getElementById('newOilGroup').style.display = (val === '+new') ? 'block' : 'none'; }
+    }
+
+    function loadEquipOilTypes(settings) {
+        globalEquipOilSettings = settings;
+        let html = settings.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+        html += `<option value="+new" style="color:var(--primary); font-weight:bold;">+ เพิ่มชนิดน้ำมันใหม่...</option>`;
+        if(document.getElementById('eOilType')) document.getElementById('eOilType').innerHTML = html;
+        updateEquipFormBalance();
+    }
+
+    function loadMasterData(deptsStr, vehiclesStr) {
+        let depts = deptsStr ? deptsStr.split(',').map(s=>s.trim()).filter(s=>s!=="") : [];
+        let deptHtml = depts.map(d => `<option value="${d}">`).join('');
+        if(document.getElementById('deptList')) document.getElementById('deptList').innerHTML = deptHtml;
+    }
+
+    function applyTheme(theme) {
+      if(!theme) return;
+      const root = document.documentElement;
+      const applyColor = (key, cssVar, elementId) => {
+        if(theme[key]) { root.style.setProperty(cssVar, theme[key]); if(document.getElementById(elementId)) { document.getElementById(elementId).value = theme[key]; } }
+      };
+
+      applyColor('primary', '--primary', 'themePrimary');
+      applyColor('accent', '--accent', 'themeAccent');
+      applyColor('bgCard', '--bg-card', 'themeBgCard');
+      applyColor('textMain', '--text-main', 'themeTextMain');
+
+      if(theme.bgType) {
+        if(document.getElementById('themeBgType')) document.getElementById('themeBgType').value = theme.bgType;
+        if(theme.bgType === 'camo') {
+          document.body.style.backgroundColor = '#4a543f';
+          document.body.style.backgroundImage = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect width=\'80\' height=\'80\' fill=\'%234a5335\'/%3E%3Cpath fill=\'%232f3621\' d=\'M0 0h10v10H0zm20 10h10v10H20zm-10 20h10v10H10zm30-10h10v10H40zM10 50h10v10H10zm40 0h10v10H50zm-30 20h10v10H20zm40-10h10v10H60zm10 20h10v10H70zm-30 10h10v10H40zm-30-50h10v10H10zm60 40h10v10H70z\'/%3E%3Cpath fill=\'%23636e47\' d=\'M10 0h10v10H10zm20 20h10v10H30zm-20 10h10v10H10zm30 10h10v10H40zM0 40h10v10H0zm40-30h10v10H40zm30 40h10v10H70zm-20 10h10v10H50zm30 10h10v10H80zm-10-30h10v10H70zm-40-10h10v10H30z\'/%3E%3Cpath fill=\'%231d2214\' d=\'M30 0h10v10H30zm20 20h10v10H50zm-40 20h10v10H10zm30 10h10v10H40zM20 40h10v10H20zm30-10h10v10H50zm20 30h10v10H70zm-10-20h10v10H60zm-30 20h10v10H30zm40 10h10v10H70zm-50-20h10v10H20z\'/%3E%3C/svg%3E")';
+          document.body.style.backgroundSize = '60px 60px';
+        } else if (theme.bgType === 'color') {
+          document.body.style.backgroundImage = 'none';
+          document.body.style.backgroundColor = theme.bgValue || '#F4F7F6';
+        } else if (theme.bgType === 'url') {
+          document.body.style.backgroundColor = '#cccccc';
+          document.body.style.backgroundImage = `url('${theme.bgValue}')`;
+          document.body.style.backgroundSize = 'cover';
+          document.body.style.backgroundAttachment = 'fixed';
+          document.body.style.backgroundPosition = 'center';
+        }
+      }
+      if(theme.bgValue && document.getElementById('themeBgValue')) { document.getElementById('themeBgValue').value = theme.bgValue; }
+      if(document.getElementById('themeBgType')) toggleBgInput();
+      
+      if(theme.maintenanceMode && document.getElementById('themeMaintenanceMode')) { 
+          let mMode = String(theme.maintenanceMode).toLowerCase();
+          document.getElementById('themeMaintenanceMode').value = mMode; 
+      }
+
+      if(theme.creditStatuses) {
+          try { globalCreditStatuses = JSON.parse(theme.creditStatuses); } 
+          catch(e) { globalCreditStatuses = theme.creditStatuses.split(',').map(s => { return {name: s.trim(), color: "#122840"}; }).filter(s => s.name !== ""); }
+          renderStatusSettings(globalCreditStatuses);
+          
+          let statusHtml = globalCreditStatuses.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+          if(document.getElementById('cStatus')) document.getElementById('cStatus').innerHTML = statusHtml;
+          if(document.getElementById('editCStatus')) document.getElementById('editCStatus').innerHTML = statusHtml;
+      }
+
+      if(theme.equipOilSettings) {
+          try { globalEquipOilSettings = JSON.parse(theme.equipOilSettings); } 
+          catch(e) { globalEquipOilSettings = []; }
+          renderEquipOilSettings(globalEquipOilSettings);
+          loadEquipOilTypes(globalEquipOilSettings);
+      }
+
+      if(theme.departments && document.getElementById('themeDepts')) { document.getElementById('themeDepts').value = theme.departments; }
+      
+      if(theme.vehicles) {
+          try { 
+              globalVehicleSettings = JSON.parse(theme.vehicles); 
+          } catch(e) { 
+              globalVehicleSettings = theme.vehicles.split(',').map(s => { return {name: s.trim(), plate: "", rate: ""} }).filter(s => s.name !== ""); 
+          }
+          renderVehicleSettings(globalVehicleSettings);
+          
+          let vehHtml = globalVehicleSettings.map(v => `<option value="${v.name}">`).join('');
+          if(document.getElementById('vehList')) document.getElementById('vehList').innerHTML = vehHtml;
+      }
+      
+      loadMasterData(theme.departments, null);
+    }
+
+    function toggleBgInput() {
+      let type = document.getElementById("themeBgType").value;
+      let group = document.getElementById("bgValueGroup");
+      let label = document.getElementById("bgValueLabel");
+      let input = document.getElementById("themeBgValue");
+      
+      if(type === 'camo') { group.style.display = "none"; input.required = false; }
+      else if(type === 'color') { group.style.display = "block"; label.innerText = "พิมพ์รหัสสี (เช่น #f4f4f4 หรือ white)"; input.required = true; }
+      else if(type === 'url') { group.style.display = "block"; label.innerText = "วาง URL ของรูปภาพ"; input.required = true; }
+    }
+
+    function handleSaveTheme(e) {
+      e.preventDefault();
+      let btn = document.getElementById('btnSaveTheme');
+      btn.disabled = true; btn.innerText = "กำลังบันทึก...";
+      showLoadingAlert();
+      
+      let statusRows = document.querySelectorAll('.status-row');
+      let newStatuses = [];
+      statusRows.forEach(row => {
+          let name = row.querySelector('.status-name').value.trim();
+          let color = row.querySelector('.status-color').value;
+          if(name) newStatuses.push({name: name, color: color});
+      });
+      document.getElementById('themeCreditStatuses').value = JSON.stringify(newStatuses);
+
+      let equipRows = document.querySelectorAll('.equip-row');
+      let newEquips = [];
+      equipRows.forEach(row => {
+         let name = row.querySelector('.equip-name').value.trim();
+         let unit = row.querySelector('.equip-unit').value.trim();
+         let initial = row.querySelector('.equip-initial').value || 0;
+         if(name) newEquips.push({name: name, unit: unit, initial: Number(initial)});
+      });
+      document.getElementById('themeEquipOilSettings').value = JSON.stringify(newEquips);
+
+      let vehRows = document.querySelectorAll('.veh-row');
+      let newVehicles = [];
+      vehRows.forEach(row => {
+         let name = row.querySelector('.veh-name').value.trim();
+         let plate = row.querySelector('.veh-plate').value.trim();
+         let rate = row.querySelector('.veh-rate').value || "";
+         if(name) newVehicles.push({name: name, plate: plate, rate: rate});
+      });
+      let vehicleJson = JSON.stringify(newVehicles);
+
+      let themeData = {
+         primary: document.getElementById('themePrimary').value,
+         accent: document.getElementById('themeAccent').value,
+         bgCard: document.getElementById('themeBgCard').value,
+         textMain: document.getElementById('themeTextMain').value,
+         bgType: document.getElementById('themeBgType').value,
+         bgValue: document.getElementById('themeBgValue').value,
+         creditStatuses: JSON.stringify(newStatuses),
+         equipOilSettings: JSON.stringify(newEquips),
+         departments: document.getElementById('themeDepts').value,
+         vehicles: vehicleJson,
+         maintenanceMode: document.getElementById('themeMaintenanceMode') ? document.getElementById('themeMaintenanceMode').value : "false"
+      };
+
+      google.script.run.withSuccessHandler(res => {
+         btn.disabled = false; btn.innerText = "บันทึกการตั้งค่าทั้งหมด";
+         if(checkExpired(res)) return;
+         Swal.fire('สำเร็จ!', res, 'success');
+         applyTheme(themeData); 
+      }).saveThemeSettings(themeData, getCurrentUser(), getCurrentToken());
+    }
+
+    // 📍 ฟังก์ชัน เช็คสถานะหุ่นยนต์
+    function checkAutoBackupUI() {
+       document.getElementById('autoBackupStatusTxt').innerText = "สถานะ: กำลังตรวจสอบ...";
+       google.script.run.withSuccessHandler(res => {
+           if(res) {
+               document.getElementById('autoBackupStatusTxt').innerText = "สถานะ: 🟢 กำลังทำงาน (ทุกวันที่ 1 เวลา 02:00น.)";
+               document.getElementById('autoBackupStatusTxt').style.color = "var(--success)";
+           } else {
+               document.getElementById('autoBackupStatusTxt').innerText = "สถานะ: 🔴 ปิดการทำงาน";
+               document.getElementById('autoBackupStatusTxt').style.color = "var(--danger)";
+           }
+       }).getAutoBackupStatus();
+    }
+
+    // 📍 ฟังก์ชัน สั่งเปิด-ปิดหุ่นยนต์
+    function toggleAutoBackup(enable) {
+       showLoadingAlert();
+       google.script.run.withSuccessHandler(res => {
+           if(checkExpired(res)) return;
+           if(res.error) {
+               Swal.fire('ข้อผิดพลาด!', 'กรุณาเปิดหน้า Google Apps Script แล้วกดเรียกใช้ฟังก์ชัน "forceAuth" ด้วยตัวเอง 1 ครั้ง เพื่อกดยืนยันสิทธิ์อนุญาตเข้าถึง Google Drive ให้หุ่นยนต์ครับ', 'warning');
+           } else {
+               Swal.fire('สำเร็จ!', res.msg, 'success');
+               checkAutoBackupUI();
+           }
+       }).toggleAutoBackupTrigger(enable, getCurrentUser(), getCurrentToken());
+    }
+
+    function confirmWipeData() {
+        Swal.fire({
+            title: '⚠️ ยืนยันการล้างข้อมูล?',
+            text: "ระบบจะลบประวัติการรับ-จ่ายทั้งหมดทิ้ง! (แต่จะสร้างไฟล์แบคอัปเก็บไว้ให้)",
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#C0392B',
+            cancelButtonColor: '#95A5A6',
+            confirmButtonText: 'ล้างข้อมูลเดี๋ยวนี้!',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoadingAlert();
+                google.script.run.withSuccessHandler(res => {
+                    if (res.startsWith("Error")) {
+                       Swal.fire('ปฏิเสธการเข้าถึง!', res.replace("Error: ", ""), 'error');
+                    } else {
+                       Swal.fire('สำเร็จ!', res, 'success');
+                       loadAdminRecords();
+                       loadDashboardData();
+                    }
+                }).clearAllSystemData(getCurrentUser(), getCurrentToken());
+            }
+        });
+    }
+
+    function applyRoleUI(role) {
+      if (role === "Administrator" || role === "Admin") {
+        document.getElementById("btnTabAdmin").style.display = "block";
+        document.getElementById("btnTabDash").style.display = "block"; 
+        document.getElementById("btnTabCredit").style.display = "block"; 
+        document.getElementById("btnTabEquipOil").style.display = "block"; 
+        
+        if (role === "Admin") {
+           document.getElementById("btnAdminUsers").style.display = "none";
+           document.getElementById("btnAdminQuota").style.display = "none";
+           document.getElementById("btnAdminTheme").style.display = "none";
+        } else {
+           document.getElementById("btnAdminUsers").style.display = "block";
+           document.getElementById("btnAdminQuota").style.display = "block";
+           document.getElementById("btnAdminTheme").style.display = "block";
+        }
+      } else {
+        document.getElementById("btnTabAdmin").style.display = "none";
+        document.getElementById("btnTabDash").style.display = "none"; 
+        document.getElementById("btnTabCredit").style.display = "none"; 
+        document.getElementById("btnTabEquipOil").style.display = "none"; 
+      }
+    }
+
+    function togglePasswordVisibility(inputId, iconEl) {
+      let input = document.getElementById(inputId);
+      if (input.type === "password") { input.type = "text"; iconEl.innerText = "🙈"; } 
+      else { input.type = "password"; iconEl.innerText = "👁️"; }
+    }
+    
+    function getCurrentUser() { return localStorage.getItem("armyUser") || sessionStorage.getItem("armyUser"); }
+    function getCurrentRole() { return localStorage.getItem("armyRole") || sessionStorage.getItem("armyRole"); }
+    function getCurrentToken() { return localStorage.getItem("armyToken") || sessionStorage.getItem("armyToken"); }
+
+    window.onload = function() {
+      applyDarkModeLogic();
+      setTodayDates();
+      let savedRate = localStorage.getItem("lastFuelRate");
+      if(savedRate && document.getElementById("routeRate")) {
+          document.getElementById("routeRate").value = savedRate;
+      }
+      
+      google.script.run.withSuccessHandler(function(theme) {
+         applyTheme(theme);
+         let activeUser = getCurrentUser(), activeRole = getCurrentRole();
+         
+         if (String(theme.maintenanceMode).toLowerCase() === "true" && activeRole !== "Administrator" && activeRole !== "Admin") {
+             forceMaintenanceLogout();
+             return;
+         }
+
+         if (activeUser && activeRole) {
+           document.getElementById("displayUser").innerText = activeUser;
+           document.getElementById("displayRole").innerText = activeRole;
+           applyRoleUI(activeRole);
+           showApp(); startHeartbeat();
+         } else { 
+           toggleAuth('login');
+           if(localStorage.getItem("isRemembered") === "yes") {
+              document.getElementById("loginUsername").value = localStorage.getItem("remUser") || "";
+              document.getElementById("loginPassword").value = localStorage.getItem("remPass") || "";
+              document.getElementById("rememberMe").checked = true;
+           }
+         }
+      }).getThemeSettings();
+    };
+
+    function startHeartbeat() {
+      if(heartbeatInterval) clearInterval(heartbeatInterval);
+      let user = getCurrentUser();
+      if(user) {
+          google.script.run.withSuccessHandler(res => {
+              if(res && res.maintenance === true && res.role !== "Administrator" && res.role !== "Admin") {
+                  forceMaintenanceLogout();
+              }
+          }).updateUserActivity(user); 
+      }
+      
+      heartbeatInterval = setInterval(() => {
+        let u = getCurrentUser(); 
+        if(u) {
+           google.script.run.withSuccessHandler(res => {
+              if(res && res.maintenance === true && res.role !== "Administrator" && res.role !== "Admin") {
+                  forceMaintenanceLogout();
+              }
+           }).updateUserActivity(u);
+        }
+      }, 15000); 
+    }
+
+    function toggleAuth(type) {
+      document.getElementById('loginBox').style.display = type === 'login' ? 'block' : 'none';
+      document.getElementById('registerBox').style.display = type === 'register' ? 'block' : 'none';
+      document.getElementById('appWrapper').style.display = 'none';
+      document.getElementById('maintenanceBox').style.display = 'none';
+    }
+
+    function showApp() {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('registerBox').style.display = 'none';
+      document.getElementById('maintenanceBox').style.display = 'none';
+      document.getElementById('appWrapper').style.display = 'block';
+      
+      switchTab('form');
+      
+      setTimeout(() => {
+          if(!globalDashboardData) loadDashboardData();
+          if(globalCreditRecords.length === 0) loadCreditData();
+          if(globalEquipOilRecords.length === 0) { loadEquipOilData(); loadPMAlerts(); }
+          if(globalRouteRecords.length === 0) loadRouteHistory();
+      }, 800); 
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      let u = document.getElementById("regUsername").value, p = document.getElementById("regPassword").value;
+      let pConfirm = document.getElementById("regPasswordConfirm").value;
+      let btn = document.getElementById("btnRegister");
+      
+      if (p !== pConfirm) { Swal.fire('เกิดข้อผิดพลาด!', 'รหัสผ่านที่ยืนยันไม่ตรงกัน!', 'error'); return; }
+      btn.disabled = true; btn.innerText = "กำลังดำเนินการ...";
+      showLoadingAlert();
+      
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false; btn.innerText = "สมัครสมาชิก";
+        if(res.success) {
+            Swal.fire('สำเร็จ!', res.message, 'success');
+            setTimeout(() => { toggleAuth('login'); document.getElementById("registerBox").querySelector('form').reset(); }, 2500);
+        } else {
+            Swal.fire('เกิดข้อผิดพลาด!', res.message, 'error');
+        }
+      }).registerUser(u, p);
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      let u = document.getElementById("loginUsername").value, p = document.getElementById("loginPassword").value;
+      let remember = document.getElementById("rememberMe").checked;
+      let btn = document.getElementById("btnLogin");
+      
+      btn.disabled = true; btn.innerText = "กำลังเข้าสู่ระบบ...";
+      showLoadingAlert();
+
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false; btn.innerText = "เข้าสู่ระบบ";
+        
+        if(res.success) {
+          Swal.close();
+          if (remember) { 
+             localStorage.setItem("armyUser", u); localStorage.setItem("armyRole", res.role); localStorage.setItem("armyToken", res.token);
+             localStorage.setItem("remUser", u); localStorage.setItem("remPass", p); localStorage.setItem("isRemembered", "yes");
+          } else { 
+             sessionStorage.setItem("armyUser", u); sessionStorage.setItem("armyRole", res.role); sessionStorage.setItem("armyToken", res.token);
+             localStorage.removeItem("remUser"); localStorage.removeItem("remPass"); localStorage.setItem("isRemembered", "no");
+          }
+          document.getElementById("displayUser").innerText = u; 
+          document.getElementById("displayRole").innerText = res.role;
+          applyRoleUI(res.role);
+          showApp(); startHeartbeat();
+        } else if (res.maintenance === true) {
+          Swal.close();
+          forceMaintenanceLogout();
+        } else { 
+          Swal.fire('ล้มเหลว', res.message, 'error'); 
+        }
+      }).loginUser(u, p);
+    }
+
+    function handleLogout(isAuto = false) {
+      localStorage.removeItem("armyUser"); localStorage.removeItem("armyRole"); localStorage.removeItem("armyToken");
+      sessionStorage.removeItem("armyUser"); sessionStorage.removeItem("armyRole"); sessionStorage.removeItem("armyToken");
+      if(heartbeatInterval) clearInterval(heartbeatInterval); 
+      
+      document.getElementById("btnTabAdmin").style.display = "none"; 
+      document.getElementById("btnTabDash").style.display = "none";
+      document.getElementById("btnTabCredit").style.display = "none"; 
+      document.getElementById("btnTabEquipOil").style.display = "none"; 
+      toggleAuth('login'); 
+      
+      if(isAuto === true) {
+          Swal.fire({icon: 'warning', title: 'เซสชันหมดอายุ', text: 'ระบบล็อกเอาต์อัตโนมัติเนื่องจากไม่ได้ใช้งานเกิน 15 นาที เพื่อความปลอดภัยครับ'});
+      } else {
+          Swal.fire({icon: 'info', title: 'ออกจากระบบ', text: 'ออกจากระบบเรียบร้อยแล้ว', timer: 1500, showConfirmButton: false});
+      }
+      
+      if(localStorage.getItem("isRemembered") === "yes") {
+         document.getElementById("loginUsername").value = localStorage.getItem("remUser") || "";
+         document.getElementById("loginPassword").value = localStorage.getItem("remPass") || "";
+         document.getElementById("rememberMe").checked = true;
+      } else {
+         document.getElementById("loginBox").querySelector('form').reset();
+      }
+    }
+
+    function switchTab(tabName) {
+      document.getElementById('sectionForm').style.display = tabName === 'form' ? 'block' : 'none';
+      document.getElementById('sectionRoute').style.display = tabName === 'route' ? 'block' : 'none';
+      document.getElementById('sectionDashboard').style.display = tabName === 'dashboard' ? 'block' : 'none';
+      document.getElementById('sectionAdmin').style.display = tabName === 'admin' ? 'block' : 'none';
+      document.getElementById('sectionCredit').style.display = tabName === 'credit' ? 'block' : 'none';
+      document.getElementById('sectionEquipOil').style.display = tabName === 'equipOil' ? 'block' : 'none';
+      
+      document.getElementById('btnTabForm').classList.toggle('active', tabName === 'form');
+      document.getElementById('btnTabRoute').classList.toggle('active', tabName === 'route');
+      document.getElementById('btnTabDash').classList.toggle('active', tabName === 'dashboard');
+      document.getElementById('btnTabAdmin').classList.toggle('active', tabName === 'admin');
+      document.getElementById('btnTabCredit').classList.toggle('active', tabName === 'credit');
+      document.getElementById('btnTabEquipOil').classList.toggle('active', tabName === 'equipOil');
+      
+      if (tabName === 'dashboard') { filterCardsByMonth(); loadDashboardData(); }
+      if (tabName === 'credit') { renderCreditPage(currentPageCredit); loadCreditData(); }
+      if (tabName === 'equipOil') { filterEquipOil(); loadEquipOilData(); loadPMAlerts(); }
+      if (tabName === 'form') { loadRecentHistory(); } 
+      if (tabName === 'route') { filterRouteRecords(); loadRouteHistory(); }
+
+      if (tabName === 'admin') { 
+         let currentRole = getCurrentRole();
+         if (currentRole === "Admin") { switchAdminTab('records'); } 
+         else { switchAdminTab('users'); }
+      } 
+
+      if (window.innerWidth <= 900) {
+         document.getElementById('sidebar').classList.remove('open');
+         document.getElementById('sidebarBackdrop').classList.remove('show');
+      }
+    }
+
+    function switchAdminTab(subTab) {
+      document.getElementById('adminAreaUsers').style.display = subTab === 'users' ? 'block' : 'none';
+      document.getElementById('adminAreaRecords').style.display = subTab === 'records' ? 'block' : 'none';
+      document.getElementById('adminAreaQuota').style.display = subTab === 'quota' ? 'block' : 'none';
+      document.getElementById('adminAreaTheme').style.display = subTab === 'theme' ? 'block' : 'none';
+      document.getElementById('adminAreaSystem').style.display = subTab === 'system' ? 'block' : 'none';
+      
+      document.getElementById('btnAdminUsers').style.background = subTab === 'users' ? 'var(--primary)' : 'transparent';
+      document.getElementById('btnAdminUsers').style.color = subTab === 'users' ? '#fff' : 'var(--text-muted)';
+      
+      document.getElementById('btnAdminRecords').style.background = subTab === 'records' ? 'var(--warning)' : 'transparent';
+      document.getElementById('btnAdminRecords').style.color = subTab === 'records' ? '#fff' : 'var(--text-muted)';
+      
+      document.getElementById('btnAdminQuota').style.background = subTab === 'quota' ? 'var(--info)' : 'transparent';
+      document.getElementById('btnAdminQuota').style.color = subTab === 'quota' ? '#fff' : 'var(--text-muted)';
+
+      document.getElementById('btnAdminTheme').style.background = subTab === 'theme' ? 'var(--primary)' : 'transparent';
+      document.getElementById('btnAdminTheme').style.color = subTab === 'theme' ? '#fff' : 'var(--text-muted)';
+      
+      document.getElementById('btnAdminSystem').style.background = subTab === 'system' ? 'var(--danger)' : 'transparent';
+      document.getElementById('btnAdminSystem').style.color = subTab === 'system' ? '#fff' : 'var(--text-muted)';
+
+      if(subTab === 'users') loadManageUsers();
+      if(subTab === 'records') { filterAdminRecords(); loadAdminRecords(); }
+      if(subTab === 'quota') loadAdminQuota();
+      if(subTab === 'system') checkAutoBackupUI(); 
+    }
+
+    function exportToExcel(tableId, fileName) {
+        let table = document.getElementById(tableId);
+        let cloneTable = table.cloneNode(true);
+        let noPrintEls = cloneTable.querySelectorAll('.no-print');
+        noPrintEls.forEach(el => el.remove());
+        let wb = XLSX.utils.table_to_book(cloneTable, {sheet: "Sheet1"});
+        XLSX.writeFile(wb, fileName + ".xlsx");
+    }
+    
+    function exportDashboardToExcel() { exportToExcel('dashTableExport', 'รายงานน้ำมันเชื้อเพลิง'); }
+    function exportCreditToExcel() { exportToExcel('creditTableExport', 'ทะเบียนเครดิตน้ำมัน'); }
+    function exportEquipToExcel() { exportToExcel('equipTableExport', 'รายงานน้ำมันอุปกรณ์'); }
+
+    function handleCalculateRoute(e) {
+       e.preventDefault();
+       let btn = document.getElementById('btnCalcRoute');
+       let originalText = btn.innerText;
+       btn.disabled = true; btn.innerText = "กำลังค้นหาและคำนวณ...";
+       showLoadingAlert(); 
+       
+       let dataObj = {
+           origin: document.getElementById('routeOrigin').value,
+           destination: document.getElementById('routeDest').value,
+           vehicle: document.getElementById('routeVeh').value,
+           licensePlate: document.getElementById('routePlate').value,
+           rate: document.getElementById('routeRate').value
+       };
+
+       google.script.run.withSuccessHandler(res => {
+           btn.disabled = false; btn.innerText = originalText;
+           if(checkExpired(res)) return;
+           if(res.success) {
+               Swal.fire('คำนวณสำเร็จ!', res.message, 'success');
+               document.getElementById('routeResultBox').style.display = "block";
+               document.getElementById('resDistance').innerText = res.distance;
+               document.getElementById('resExact').innerText = res.exactFuel;
+               document.getElementById('resFuel').innerText = res.fuel;
+               loadRouteHistory();
+           } else {
+               Swal.fire('ข้อผิดพลาด!', res.message, 'error');
+           }
+       }).withFailureHandler(err => { 
+           btn.disabled = false; btn.innerText = originalText;
+           if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error'); 
+       }).calculateRouteAndSave(dataObj, getCurrentUser(), getCurrentToken());
+    }
+
+    function loadRouteHistory() {
+       let tbody = document.getElementById('routeTableBody');
+       if(globalRouteRecords.length === 0) tbody.innerHTML = "<tr><td colspan='9' class='center'>กำลังโหลด...</td></tr>";
+       
+       google.script.run.withSuccessHandler(res => {
+           if(res && res.error) { tbody.innerHTML = `<tr><td colspan='9' class='center' style='color:red;'>${res.message}</td></tr>`; return; }
+           globalRouteRecords = res.data;
+           filterRouteRecords();
+       }).getRouteHistory();
+    }
+
+    function filterRouteRecords() {
+       let kw = document.getElementById('searchRoute') ? document.getElementById('searchRoute').value.toLowerCase() : "";
+       if(kw) {
+           filteredRouteRecords = globalRouteRecords.filter(r => 
+               (r.origin && String(r.origin).toLowerCase().includes(kw)) ||
+               (r.destination && String(r.destination).toLowerCase().includes(kw)) ||
+               (r.vehicle && String(r.vehicle).toLowerCase().includes(kw)) ||
+               (r.licensePlate && String(r.licensePlate).toLowerCase().includes(kw))
+           );
+       } else {
+           filteredRouteRecords = globalRouteRecords;
+       }
+       renderRoutePage(currentPageRoute);
+    }
+
+    function useRouteData(rowIndex) {
+        let rec = globalRouteRecords.find(x => x.rowIndex === rowIndex);
+        if(rec) {
+            switchTab('form');
+            document.getElementById('vehicle').value = rec.vehicle;
+            document.getElementById('licensePlate').value = rec.licensePlate;
+            document.getElementById('diesel').value = rec.fuel; 
+            document.getElementById('mission').value = "เดินทางจาก " + rec.origin + " ไป " + rec.destination;
+            Swal.fire({icon:'success', title:'ดึงข้อมูลสำเร็จ!', text:'คัดลอกระยะทางและค่าน้ำมันลงแบบฟอร์มแล้ว', timer: 2000, showConfirmButton: false});
+        }
+    }
+
+    function renderRoutePage(page) {
+      currentPageRoute = page;
+      let tbody = document.getElementById('routeTableBody'); 
+      tbody.innerHTML = "";
+      
+      if(!filteredRouteRecords || filteredRouteRecords.length === 0) { 
+         tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:15px;'>ไม่มีประวัติอ้างอิง</td></tr>"; 
+         document.getElementById('routePagination').innerHTML = "";
+         return; 
+      }
+      
+      let start = (page - 1) * ROWS_PER_PAGE;
+      let end = start + ROWS_PER_PAGE;
+      let paginated = filteredRouteRecords.slice(start, end);
+      
+      paginated.forEach(r => {
+         let vehDisplay = r.vehicle || "-";
+         
+         tbody.innerHTML += `<tr>
+           <td data-label="วันที่ค้นหา" class="center"><small style="color:var(--text-muted);">${r.date}</small></td>
+           <td data-label="ต้นทาง" style="min-width: 150px;"><b style="color:var(--primary);">${r.origin}</b></td>
+           <td data-label="ปลายทาง" style="min-width: 150px;"><b style="color:var(--primary);">${r.destination}</b></td>
+           <td data-label="ชนิดรถ">${vehDisplay}</td>
+           <td data-label="ทะเบียนรถ">${r.licensePlate || "-"}</td>
+           <td data-label="ระยะทาง (กม.)" class="center"><span style="color:blue; font-weight:700;">${r.distance}</span></td>
+           <td data-label="เกณฑ์" class="center">${r.rate}</td>
+           <td data-label="ผลลัพธ์ (ลิตร)" class="center"><span style="color:var(--danger); font-size:16px; font-weight:bold;">${r.fuel}</span></td>
+           <td data-label="จัดการ" class="center no-print">
+              <button class="approve-btn" style="background:var(--success); padding:4px 8px; margin-bottom:5px; width:100%;" onclick="useRouteData(${r.rowIndex})">📝 นำไปเบิก</button>
+              <button class="approve-btn" style="background:var(--danger); padding:4px 8px; width:100%;" onclick="deleteRouteRow(${r.rowIndex})">✖ ลบ</button>
+           </td>
+         </tr>`;
+      });
+      renderPaginationControls('routePagination', filteredRouteRecords.length, page, 'renderRoutePage');
+    }
+
+    function deleteRouteRow(rowIndex) {
+        Swal.fire({ title: 'ลบประวัตินี้?', text: "คุณต้องการลบประวัติการคำนวณนี้ใช่หรือไม่?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#C0392B', cancelButtonColor: '#95A5A6', confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoadingAlert();
+                google.script.run.withSuccessHandler(res => {
+                    if(checkExpired(res)) return;
+                    Swal.fire('ลบสำเร็จ!', res, 'success');
+                    loadRouteHistory();
+                }).withFailureHandler(err => { 
+                    if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error'); 
+                }).deleteRouteRecord(rowIndex, getCurrentUser(), getCurrentToken());
+            }
+        });
+    }
+
+    function loadRecentHistory() {
+       let tbody = document.getElementById('recentHistoryTableBody');
+       if(globalAdminRecords.length === 0) tbody.innerHTML = "<tr><td colspan='7' class='center'>กำลังโหลด...</td></tr>";
+       
+       google.script.run
+       .withSuccessHandler(function(res) {
+           if(res && res.error) { tbody.innerHTML = `<tr><td colspan='7' class='center' style='color:red;'>${res.message}</td></tr>`; return; }
+           globalAdminRecords = res.data;
+           
+           tbody.innerHTML = "";
+           if(!globalAdminRecords || globalAdminRecords.length === 0) { tbody.innerHTML = "<tr><td colspan='7' class='center'>ไม่มีข้อมูล</td></tr>"; return; }
+           
+           let sliced = globalAdminRecords.slice(0, 20); 
+           sliced.forEach(r => {
+               let typeColor = (r.type === "จ่าย" || r.type.includes("เติม")) ? "var(--danger)" : "var(--success)";
+               
+               tbody.innerHTML += `<tr>
+                 <td data-label="วันที่">${r.date}</td>
+                 <td data-label="ภารกิจ (ประเภท)"><b style="color:var(--primary);">${r.mission}</b> <br><small style="color:${typeColor}; font-weight:700;">[${r.type}]</small></td>
+                 <td data-label="ชนิดรถ">${r.vehicle || "-"}</td>
+                 <td data-label="ทะเบียนรถ">${r.licensePlate || "-"}</td>
+                 <td data-label="ดีเซล" class="center">${Number(r.diesel)>0 ? fmt(r.diesel) : '-'}</td>
+                 <td data-label="แก๊ส 91" class="center">${Number(r.gas91)>0 ? fmt(r.gas91) : '-'}</td>
+                 <td data-label="แก๊ส 95" class="center">${Number(r.gas95)>0 ? fmt(r.gas95) : '-'}</td>
+               </tr>`;
+           });
+       })
+       .withFailureHandler(function(err){ tbody.innerHTML = `<tr><td colspan='7' class='center' style='color:red;'>เชื่อมต่อล้มเหลว: ${err.message}</td></tr>`; })
+       .getAdminFuelRecords();
+    }
+
+    function submitCredit(event) {
+      event.preventDefault();
+      let btn = document.getElementById("btnSubmitCredit");
+      btn.disabled = true; btn.innerText = "กำลังบันทึก...";
+      showLoadingAlert();
+      
+      let data = {
+        status: document.getElementById("cStatus").value,
+        item: document.getElementById("cItem").value,
+        fuelType: document.getElementById("cFuelType").value,
+        totalCredit: document.getElementById("cTotalCredit").value || 0,
+        drawn: document.getElementById("cDrawn").value || 0,
+        acctPaid: document.getElementById("cAcctPaid").value || 0,
+        pending: document.getElementById("cPending").value || 0,
+        received: document.getElementById("cReceived").value || 0,
+        remaining: document.getElementById("cRemaining").value || 0,
+        recordedBy: getCurrentUser()
+      };
+      
+      google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.innerText = "เพิ่มรายการเครดิต"; 
+          if(checkExpired(res)) return;
+          if (res.startsWith("Error")) {
+             Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error');
+          } else {
+             Swal.fire('สำเร็จ!', res, 'success');
+             document.getElementById("creditForm").reset();
+             loadCreditData();
+          }
+      }).withFailureHandler(err => { 
+          btn.disabled = false; btn.innerText = "เพิ่มรายการเครดิต"; 
+          if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error'); 
+      }).addCreditRecord(data, getCurrentToken());
+    }
+
+    function loadCreditData() {
+      let tbody = document.getElementById('creditTableBody'); 
+      if(globalCreditRecords.length === 0) tbody.innerHTML = "<tr><td colspan='11' style='text-align:center;'>กำลังโหลด...</td></tr>";
+      
+      google.script.run
+      .withSuccessHandler(function(res) {
+         if(res && res.error) { tbody.innerHTML = `<tr><td colspan='11' class='center' style='color:red;'>${res.message}</td></tr>`; return; }
+         globalCreditRecords = res.data;
+         renderCreditPage(currentPageCredit);
+      })
+      .withFailureHandler(function(err){ tbody.innerHTML = `<tr><td colspan='11' class='center' style='color:red;'>เชื่อมต่อล้มเหลว: ${err.message}</td></tr>`; })
+      .getCreditRecords();
+    }
+
+    function renderCreditPage(page) {
+      currentPageCredit = page;
+      let tbody = document.getElementById('creditTableBody'); 
+      tbody.innerHTML = "";
+      
+      if(!globalCreditRecords || globalCreditRecords.length === 0) { 
+         tbody.innerHTML = "<tr><td colspan='11' style='text-align:center; padding:15px;'>ยังไม่มีข้อมูลเครดิต</td></tr>"; 
+         document.getElementById('creditPagination').innerHTML = "";
+         return; 
+      }
+      
+      let start = (page - 1) * ROWS_PER_PAGE;
+      let end = start + ROWS_PER_PAGE;
+      let paginated = globalCreditRecords.slice(start, end);
+      
+      let count = start + 1; 
+      paginated.forEach(r => {
+         let statusObj = globalCreditStatuses.find(s => s.name === r.status);
+         let statusColor = statusObj ? statusObj.color : "var(--primary)";
+         let statusOptions = globalCreditStatuses.map(s => `<option value="${s.name}" ${r.status===s.name?'selected':''}>${s.name}</option>`).join('');
+         let statusSelect = `<select id="cstat_${r.rowIndex}" class="mini-select no-print" style="color:${statusColor}; font-weight:700;" onchange="changeCreditStatus(${r.rowIndex})">
+             ${statusOptions}
+         </select><span class="print-only" style="color:${statusColor}; font-weight:700;">${r.status}</span>`;
+
+         tbody.innerHTML += `<tr>
+           <td data-label="ลำดับ" class="center">${count++}</td>
+           <td data-label="รายการ"><b style="color:var(--primary);">${r.item}</b></td>
+           <td data-label="ชนิดน้ำมัน" class="center"><b>${r.fuelType || "-"}</b></td>
+           <td data-label="เครดิต" class="center"><span style="color:blue; font-weight:700;">${fmt(r.totalCredit, true)}</span></td>
+           <td data-label="เบิกแล้ว" class="center"><span style="color:blue; font-weight:700;">${fmt(r.drawn, true)}</span></td>
+           <td data-label="บัญชีคุมจ่ายแล้ว" class="center">${fmt(r.acctPaid)}</td>
+           <td data-label="ค้างจ่าย" class="center">${fmt(r.pending)}</td>
+           <td data-label="รับแล้ว" class="center">${fmt(r.received)}</td>
+           <td data-label="เครดิตคงเหลือ" class="center"><span style="color:var(--danger); font-weight:700;">${fmt(r.remaining, true)}</span></td>
+           <td data-label="สถานะ" class="center">${statusSelect}</td>
+           <td data-label="จัดการ" class="center no-print"><button class="edit-btn" onclick="openEditCreditModal(${r.rowIndex})">✏️</button></td>
+         </tr>`;
+      });
+      renderPaginationControls('creditPagination', globalCreditRecords.length, page, 'renderCreditPage');
+    }
+
+    function changeCreditStatus(rowIndex) {
+       let newStatus = document.getElementById(`cstat_${rowIndex}`).value;
+       google.script.run.withSuccessHandler(res => {
+          if(checkExpired(res)) return;
+          loadCreditData(); 
+       }).withFailureHandler(err => {
+          if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+       }).updateCreditStatus(rowIndex, newStatus, getCurrentUser(), getCurrentToken());
+    }
+    
+    function openEditCreditModal(rowIndex) {
+      let record = globalCreditRecords.find(r => r.rowIndex === rowIndex);
+      if(!record) return;
+
+      document.getElementById('editCRowIndex').value = record.rowIndex;
+      document.getElementById('editCStatus').value = record.status;
+      document.getElementById('editCItem').value = record.item;
+      if(record.fuelType) document.getElementById('editCFuelType').value = record.fuelType;
+
+      document.getElementById('editCTotalCredit').value = record.totalCredit;
+      document.getElementById('editCDrawn').value = record.drawn;
+      document.getElementById('editCAcct').value = record.acctPaid;
+      document.getElementById('editCPending').value = record.pending;
+      document.getElementById('editCRecv').value = record.received;
+      document.getElementById('editCRemaining').value = record.remaining;
+      document.getElementById('editCreditModal').style.display = 'flex';
+    }
+
+    function closeEditCreditModal() { document.getElementById('editCreditModal').style.display = 'none'; }
+
+    function submitEditCreditForm(e) {
+      e.preventDefault();
+      let btn = document.getElementById("btnSaveEditCredit");
+      btn.disabled = true; btn.innerText = "กำลังอัปเดต...";
+      showLoadingAlert();
+      let rowIndex = parseInt(document.getElementById("editCRowIndex").value);
+      
+      let data = {
+        status: document.getElementById("editCStatus").value,
+        item: document.getElementById("editCItem").value,
+        fuelType: document.getElementById("editCFuelType").value,
+        totalCredit: document.getElementById("editCTotalCredit").value || 0,
+        drawn: document.getElementById("editCDrawn").value || 0,
+        acctPaid: document.getElementById("editCAcct").value || 0,
+        pending: document.getElementById("editCPending").value || 0,
+        received: document.getElementById("editCRecv").value || 0,
+        remaining: document.getElementById("editCRemaining").value || 0
+      };
+
+      google.script.run.withSuccessHandler(res => {
+         btn.disabled = false; btn.innerText = "อัปเดตข้อมูลเครดิต";
+         if(checkExpired(res)) return;
+         if (res.startsWith("Error")) {
+             Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error');
+         } else {
+             Swal.fire('สำเร็จ!', res, 'success');
+             setTimeout(() => { closeEditCreditModal(); loadCreditData(); }, 1000); 
+         }
+      }).withFailureHandler(err => { 
+          btn.disabled = false; btn.innerText = "อัปเดตข้อมูลเครดิต";
+          if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error'); 
+      }).updateCreditRecord(rowIndex, data, getCurrentUser(), getCurrentToken());
+    }
+
+    function loadPMAlerts() {
+       let tbody = document.getElementById('pmAlertsTableBody');
+       google.script.run
+       .withSuccessHandler(function(res) {
+           if(res && res.error) { return; }
+           let alerts = res.data;
+           tbody.innerHTML = "";
+           if(!alerts || alerts.length === 0) { tbody.innerHTML = "<tr><td colspan='4' class='center'>ไม่มีประวัติการเบิกน้ำมันเครื่องรถยนต์</td></tr>"; return; }
+           
+           alerts.forEach(a => {
+               tbody.innerHTML += `<tr>
+                 <td data-label="ชนิดรถ"><b style="color:var(--primary);">${a.vehicle}</b> <small style="color:var(--text-muted);">(${a.oilType})</small></td>
+                 <td data-label="เปลี่ยนล่าสุด" class="center">${a.lastDate}</td>
+                 <td data-label="รอบถัดไป" class="center"><b>${a.nextDate}</b></td>
+                 <td data-label="สถานะ" class="center"><span style="color:${a.color}; font-weight:bold;">${a.status}</span></td>
+               </tr>`;
+           });
+       }).getPMAlerts();
+    }
+
+    function submitEquipOil(event) {
+      event.preventDefault();
+      let btn = document.getElementById("btnSubmitEquipOil");
+      btn.disabled = true; btn.innerText = "กำลังบันทึก...";
+      showLoadingAlert();
+      
+      let oilType = document.getElementById("eOilType").value;
+      let unit = "ลิตร";
+      let isNew = false;
+      
+      if (oilType === "+new") {
+         oilType = document.getElementById("eNewOilType").value.trim();
+         unit = document.getElementById("eNewOilUnit").value;
+         isNew = true;
+      } else {
+         let setting = globalEquipOilSettings.find(s => s.name === oilType);
+         if(setting) unit = setting.unit;
+      }
+
+      let data = {
+        isNew: isNew,
+        date: document.getElementById("eDate").value,
+        item: document.getElementById("eItem").value,
+        oilType: oilType,
+        unit: unit,
+        total: document.getElementById("eTotal").value || 0,
+        paid: document.getElementById("ePaid").value || 0,
+        remaining: document.getElementById("eRemaining").value || 0,
+        vehicle: document.getElementById("eVehicle").value,
+        licensePlate: document.getElementById("eLicensePlate").value,
+        recipient: document.getElementById("eRecipient").value,
+        recordedBy: getCurrentUser()
+      };
+      
+      google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.innerText = "บันทึกรายการ";
+          if(checkExpired(res)) return;
+          if (res.startsWith("Error")) {
+             Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error');
+          } else {
+             Swal.fire('สำเร็จ!', res, 'success');
+             document.getElementById("equipOilForm").reset();
+             setTodayDates();
+             document.getElementById("newOilGroup").style.display = "none";
+             loadEquipOilData(); 
+             loadPMAlerts();
+          }
+      }).withFailureHandler(err => { 
+          btn.disabled = false; btn.innerText = "บันทึกรายการ";
+          if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error'); 
+      }).addEquipOilRecord(data, getCurrentToken());
+    }
+
+    function loadEquipOilData() {
+      let tbody = document.getElementById('equipOilTableBody'); 
+      if(globalEquipOilRecords.length === 0) tbody.innerHTML = "<tr><td colspan='11' style='text-align:center;'>กำลังโหลด...</td></tr>";
+      
+      google.script.run
+      .withSuccessHandler(function(res) {
+         if(res && res.error) { return; }
+         
+         let resData = res.data;
+         globalEquipOilRecords = resData.records;
+         globalEquipOilSettings = resData.settings;
+         
+         equipSummaryMap = {};
+         loadEquipOilTypes(globalEquipOilSettings);
+         
+         let cardsContainer = document.getElementById('equipOilSummaryCards');
+         cardsContainer.innerHTML = '';
+         if(resData.summary && resData.summary.length > 0) {
+             resData.summary.forEach(s => {
+                equipSummaryMap[s.name] = s.balance; 
+                cardsContainer.innerHTML += `<div class="stat-card" style="border-top-color: var(--primary);"><h3>${s.name}</h3><div class="val">${fmtL(s.balance, s.unit, true)}</div></div>`;
+             });
+         } else {
+             cardsContainer.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:10px;">ยังไม่มีการตั้งค่ายอดตั้งต้นในระบบ (ตั้งได้ที่เมนูแอดมิน)</div>';
+         }
+
+         updatePlateList(); 
+         filterEquipOil(); 
+      })
+      .getEquipOilData();
+    }
+    
+    function filterEquipOil() {
+       let kw = document.getElementById('searchEquip') ? document.getElementById('searchEquip').value.toLowerCase() : "";
+       if(kw) {
+           filteredEquipOilRecords = globalEquipOilRecords.filter(r => 
+               (r.item && String(r.item).toLowerCase().includes(kw)) ||
+               (r.vehicle && String(r.vehicle).toLowerCase().includes(kw)) ||
+               (r.recipient && String(r.recipient).toLowerCase().includes(kw)) ||
+               (r.licensePlate && String(r.licensePlate).toLowerCase().includes(kw)) ||
+               (r.date && String(r.date).toLowerCase().includes(kw))
+           );
+       } else {
+           filteredEquipOilRecords = globalEquipOilRecords;
+       }
+       renderEquipOilPage(currentPageEquip);
+    }
+
+    function renderEquipOilPage(page) {
+      currentPageEquip = page;
+      let tbody = document.getElementById('equipOilTableBody'); 
+      tbody.innerHTML = "";
+      
+      if(!filteredEquipOilRecords || filteredEquipOilRecords.length === 0) { 
+         tbody.innerHTML = "<tr><td colspan='11' style='text-align:center; padding:15px;'>ไม่มีข้อมูลที่ค้นหา</td></tr>"; 
+         document.getElementById('equipOilPagination').innerHTML = "";
+         return; 
+      }
+      
+      let start = (page - 1) * ROWS_PER_PAGE;
+      let end = start + ROWS_PER_PAGE;
+      let paginated = filteredEquipOilRecords.slice(start, end);
+      
+      let count = start + 1; 
+      paginated.forEach(r => {
+         tbody.innerHTML += `<tr>
+           <td data-label="ลำดับ" class="center">${count++}</td>
+           <td data-label="วันที่">${r.date}</td>
+           <td data-label="รายการ"><b style="color:var(--primary);">${r.item || "-"}</b></td>
+           <td data-label="ชนิดน้ำมัน" class="center"><b style="color:var(--primary);">${r.oilType}</b></td>
+           <td data-label="ยอดเต็ม" class="center"><span style="color:blue; font-weight:700;">${fmtL(r.total, r.unit, false)}</span></td>
+           <td data-label="ยอดจ่าย" class="center"><span style="color:var(--danger); font-weight:700;">${fmtL(r.paid, r.unit, false)}</span></td>
+           <td data-label="คงเหลือสุทธิ" class="center"><span style="color:var(--primary); font-weight:700;">${fmtL(r.remaining, r.unit, true)}</span></td>
+           <td data-label="ชนิดรถ">${r.vehicle || "-"}</td>
+           <td data-label="ทะเบียนรถ">${r.licensePlate || "-"}</td>
+           <td data-label="ผู้รับ สป.">${r.recipient || "-"}</td>
+           <td data-label="จัดการ" class="center no-print"><button class="edit-btn" onclick="openEditEquipOilModal(${r.rowIndex})">✏️</button></td>
+         </tr>`;
+      });
+      renderPaginationControls('equipOilPagination', filteredEquipOilRecords.length, page, 'renderEquipOilPage');
+    }
+    
+    function openEditEquipOilModal(rowIndex) {
+      let record = globalEquipOilRecords.find(r => r.rowIndex === rowIndex);
+      if(!record) return;
+
+      document.getElementById('editERowIndex').value = record.rowIndex;
+      document.getElementById('editEDate').value = record.date;
+      document.getElementById('editEItem').value = record.item || "";
+      document.getElementById('editETotal').value = record.total;
+      document.getElementById('editEPaid').value = record.paid;
+      document.getElementById('editERemaining').value = record.remaining;
+      document.getElementById('editEVehicle').value = record.vehicle;
+      document.getElementById('editELicensePlate').value = record.licensePlate || "";
+      document.getElementById('editERecipient').value = record.recipient;
+      
+      document.getElementById('editEOilType').value = record.oilType;
+
+      document.getElementById('editEquipOilModal').style.display = 'flex';
+    }
+
+    function closeEditEquipOilModal() { document.getElementById('editEquipOilModal').style.display = 'none'; }
+
+    function submitEditEquipOilForm(e) {
+      e.preventDefault();
+      let btn = document.getElementById("btnSaveEditEquipOil");
+      btn.disabled = true; btn.innerText = "กำลังอัปเดต...";
+      showLoadingAlert();
+      let rowIndex = parseInt(document.getElementById("editERowIndex").value);
+      
+      let oilType = document.getElementById("editEOilType").value;
+      let unit = "ลิตร";
+      let setting = globalEquipOilSettings.find(s => s.name === oilType);
+      if(setting) unit = setting.unit;
+
+      let data = {
+        isNew: false,
+        date: document.getElementById("editEDate").value,
+        item: document.getElementById("editEItem").value,
+        oilType: oilType,
+        unit: unit,
+        total: document.getElementById("editETotal").value || 0,
+        paid: document.getElementById("editEPaid").value || 0,
+        remaining: document.getElementById("editERemaining").value || 0,
+        vehicle: document.getElementById("editEVehicle").value,
+        licensePlate: document.getElementById("editELicensePlate").value,
+        recipient: document.getElementById("editERecipient").value
+      };
+
+      google.script.run.withSuccessHandler(res => {
+         btn.disabled = false; btn.innerText = "อัปเดตข้อมูล";
+         if(checkExpired(res)) return;
+         if (res.startsWith("Error")) {
+             Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error');
+         } else {
+             Swal.fire('สำเร็จ!', res, 'success');
+             setTimeout(() => { closeEditEquipOilModal(); loadEquipOilData(); loadPMAlerts(); }, 1000); 
+         }
+      }).withFailureHandler(err => { 
+          btn.disabled = false; btn.innerText = "อัปเดตข้อมูล";
+          if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error'); 
+      }).updateEquipOilRecord(rowIndex, data, getCurrentUser(), getCurrentToken());
+    }
+
+    function loadManageUsers() {
+      let tbody = document.getElementById('adminTableBody'); 
+      if(tbody.innerHTML.trim() === "") tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>กำลังโหลด...</td></tr>";
+      
+      google.script.run
+      .withSuccessHandler(function(res) {
+        if(res && res.error) { return; }
+        let users = res.data;
+        tbody.innerHTML = "";
+        if(!users || users.length === 0) tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:15px;'>ไม่มีผู้ใช้งานอื่น</td></tr>";
+        else users.forEach(u => {
+              let roleSelect = `<select id="role_${u.username}" class="mini-select"><option value="User" ${u.role==='User'?'selected':''}>User</option><option value="Admin" ${u.role==='Admin'?'selected':''}>Admin</option><option value="Administrator" ${u.role==='Administrator'?'selected':''}>Administrator</option></select>`;
+              let statusSelect = `<select id="status_${u.username}" class="mini-select" style="color: ${u.status==='อนุมัติ'?'var(--success)':'var(--danger)'}; font-weight:700;"><option value="รออนุมัติ" ${u.status==='รออนุมัติ'?'selected':''}>รออนุมัติ</option><option value="อนุมัติ" ${u.status==='อนุมัติ'?'selected':''}>อนุมัติ</option></select>`;
+              tbody.innerHTML += `<tr>
+                <td data-label="Username"><b style="font-size:14px;">${u.username}</b><br><small>${u.onlineStatus}</small></td>
+                <td data-label="สถานะ">${statusSelect}</td>
+                <td data-label="สิทธิ์/จัดการ">${roleSelect} <button class="approve-btn" style="padding:6px 10px; font-size:12px; margin-left:5px;" onclick="saveUserAccess('${u.username}')">บันทึก</button></td>
+              </tr>`;
+           });
+      }).getManageUsers(getCurrentUser());
+    }
+
+    function saveUserAccess(username) {
+       let r = document.getElementById(`role_${username}`).value, s = document.getElementById(`status_${username}`).value;
+       google.script.run.withSuccessHandler(res => { 
+           if(checkExpired(res)) return;
+           Swal.fire({icon: 'success', title: 'อัปเดตสิทธิ์สำเร็จ', timer: 1000, showConfirmButton: false});
+           loadManageUsers(); 
+       }).withFailureHandler(err => {
+           if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+       }).updateUserAccess(username, r, s, getCurrentUser(), getCurrentToken());
+    }
+
+    function loadAdminRecords() {
+      let tbody = document.getElementById('adminRecordsTableBody'); 
+      if(globalAdminRecords.length === 0) tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;'>กำลังโหลด...</td></tr>";
+      
+      google.script.run
+      .withSuccessHandler(function(res) {
+         if(res && res.error) { return; }
+         globalAdminRecords = res.data; 
+         filterAdminRecords(); 
+      }).getAdminFuelRecords();
+    }
+    
+    function filterAdminRecords() {
+       let kw = document.getElementById('searchAdmin') ? document.getElementById('searchAdmin').value.toLowerCase() : "";
+       if(kw) {
+           filteredAdminRecords = globalAdminRecords.filter(r => 
+               (r.mission && String(r.mission).toLowerCase().includes(kw)) ||
+               (r.department && String(r.department).toLowerCase().includes(kw)) ||
+               (r.vehicle && String(r.vehicle).toLowerCase().includes(kw)) ||
+               (r.licensePlate && String(r.licensePlate).toLowerCase().includes(kw)) ||
+               (r.date && String(r.date).toLowerCase().includes(kw))
+           );
+       } else {
+           filteredAdminRecords = globalAdminRecords;
+       }
+       renderAdminRecordsPage(currentPageAdmin);
+    }
+
+    function renderAdminRecordsPage(page) {
+      try {
+          currentPageAdmin = page;
+          let tbody = document.getElementById('adminRecordsTableBody'); 
+          tbody.innerHTML = "";
+          
+          if(!filteredAdminRecords || filteredAdminRecords.length === 0) { 
+             tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:15px;'>ไม่มีข้อมูลที่ค้นหา</td></tr>"; 
+             document.getElementById('adminRecordsPagination').innerHTML = "";
+             return; 
+          }
+          
+          let start = (page - 1) * ROWS_PER_PAGE;
+          let end = start + ROWS_PER_PAGE;
+          let paginated = filteredAdminRecords.slice(start, end);
+          
+          let html = "";
+          paginated.forEach(r => {
+             let typeColor = "var(--primary)";
+             if(r.type === "จ่าย") typeColor = "var(--danger)";
+             else if(r.type === "รับ") typeColor = "var(--success)";
+             else if(r.type === "ยืมอัตราพิกัด") typeColor = "var(--warning)";
+             else if(r.type === "เติมอัตราพิกัด") typeColor = "var(--info)";
+
+             let dText = Number(r.diesel) > 0 ? `<span style="color:var(--text-main); font-weight:600;">${fmt(r.diesel)}</span>` : "-";
+             let g91Text = Number(r.gas91) > 0 ? `<span style="color:var(--text-main); font-weight:600;">${fmt(r.gas91)}</span>` : "-";
+             let g95Text = Number(r.gas95) > 0 ? `<span style="color:var(--text-main); font-weight:600;">${fmt(r.gas95)}</span>` : "-";
+
+             html += `<tr>
+               <td data-label="วันที่">${r.date}</td>
+               <td data-label="ภารกิจ (ประเภท)"><b style="color:var(--primary);">${r.mission}</b><br><small style="color:${typeColor}; font-weight:600;">[${r.type}]</small></td>
+               <td data-label="หน่วย">${r.department || "-"}</td>
+               <td data-label="ชนิดรถ">${r.vehicle || "-"}</td>
+               <td data-label="ทะเบียน">${r.licensePlate || "-"}</td>
+               <td data-label="ดีเซล (ลิตร)" class="center">${dText}</td>
+               <td data-label="แก๊ส 91 (ลิตร)" class="center">${g91Text}</td>
+               <td data-label="แก๊ส 95 (ลิตร)" class="center">${g95Text}</td>
+               <td data-label="จัดการ" class="center"><button class="edit-btn" onclick="openEditModal(${r.rowIndex})">✏️ แก้ไข</button></td>
+             </tr>`;
+          });
+          tbody.innerHTML = html;
+          renderPaginationControls('adminRecordsPagination', filteredAdminRecords.length, page, 'renderAdminRecordsPage');
+      } catch (e) {
+          console.error("Render Admin Error: ", e);
+      }
+    }
+
+    function loadAdminQuota() {
+       google.script.run
+       .withSuccessHandler(function(res) {
+          if(res && res.error) { return; }
+          let q = res.data;
+          document.getElementById('adminBDiesel').value = q.bDiesel; document.getElementById('adminBGas91').value = q.bGas91; document.getElementById('adminBGas95').value = q.bGas95;
+          document.getElementById('adminQDiesel').value = q.qDiesel; document.getElementById('adminQGas91').value = q.qGas91; document.getElementById('adminQGas95').value = q.qGas95;
+       }).getAdminQuota();
+    }
+
+    function handleSaveQuota(e) {
+      e.preventDefault();
+      let bD = document.getElementById('adminBDiesel').value, b91 = document.getElementById('adminBGas91').value, b95 = document.getElementById('adminBGas95').value;
+      let qD = document.getElementById('adminQDiesel').value, q91 = document.getElementById('adminQGas91').value, q95 = document.getElementById('adminQGas95').value;
+      
+      let btn = document.getElementById('btnSaveQuota');
+      btn.disabled = true; btn.innerText = "กำลังประมวลผล...";
+      showLoadingAlert();
+      google.script.run.withSuccessHandler(res => {
+         btn.disabled = false; btn.innerText = "บันทึกโควตาส่วนกลาง";
+         if(checkExpired(res)) return;
+         Swal.fire('สำเร็จ!', res, 'success');
+      }).withFailureHandler(err => {
+         btn.disabled = false; btn.innerText = "บันึกโควตาส่วนกลาง";
+         if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+      }).updateAdminQuota(bD, b91, b95, qD, q91, q95, getCurrentUser(), getCurrentToken());
+    }
+
+    function openEditModal(rowIndex) {
+      let record = globalAdminRecords.find(r => r.rowIndex === rowIndex);
+      if(!record) return;
+      document.getElementById('editRowIndex').value = record.rowIndex;
+      document.getElementById('editDate').value = record.date;
+      document.getElementById('editMission').value = record.mission;
+      document.getElementById('editType').value = record.type;
+      document.getElementById('editDepartment').value = record.department;
+      document.getElementById('editDiesel').value = record.diesel;
+      document.getElementById('editGas91').value = record.gas91;
+      document.getElementById('editGas95').value = record.gas95;
+      document.getElementById('editVehicle').value = record.vehicle;
+      document.getElementById('editLicensePlate').value = record.licensePlate || "";
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+    function submitEditForm(e) {
+      e.preventDefault();
+      let btn = document.getElementById("btnSaveEdit");
+      btn.disabled = true; btn.innerText = "กำลังอัปเดต...";
+      showLoadingAlert();
+      let rowIndex = parseInt(document.getElementById("editRowIndex").value);
+      let data = {
+        date: document.getElementById("editDate").value, mission: document.getElementById("editMission").value,
+        type: document.getElementById("editType").value, department: document.getElementById("editDepartment").value,
+        diesel: document.getElementById("editDiesel").value, gas91: document.getElementById("editGas91").value,
+        gas95: document.getElementById("editGas95").value, vehicle: document.getElementById("editVehicle").value,
+        licensePlate: document.getElementById("editLicensePlate").value
+      };
+      google.script.run.withSuccessHandler(res => {
+         btn.disabled = false; btn.innerText = "อัปเดตข้อมูล";
+         if(checkExpired(res)) return;
+         if (res.startsWith("Error")) {
+             Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error');
+         } else {
+             Swal.fire('สำเร็จ!', res, 'success');
+             setTimeout(() => { closeEditModal(); loadAdminRecords(); loadRecentHistory(); }, 1500); 
+         }
+      }).withFailureHandler(err => {
+         btn.disabled = false; btn.innerText = "อัปเดตข้อมูล";
+         if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+      }).updateFuelRecord(rowIndex, data, getCurrentUser(), getCurrentToken());
+    }
+
+    function submitForm(event) {
+      event.preventDefault();
+      let btn = document.getElementById("btnSubmit");
+      btn.disabled = true; btn.innerText = "กำลังส่งข้อมูล...";
+      showLoadingAlert();
+      let data = {
+        date: document.getElementById("date").value, mission: document.getElementById("mission").value,
+        type: document.getElementById("type").value, department: document.getElementById("department").value,
+        diesel: document.getElementById("diesel").value, gas91: document.getElementById("gas91").value,
+        gas95: document.getElementById("gas95").value, vehicle: document.getElementById("vehicle").value,
+        licensePlate: document.getElementById("licensePlate").value,
+        recordedBy: getCurrentUser()
+      };
+      google.script.run.withSuccessHandler(res => {
+          btn.disabled = false; btn.innerText = "บันทึกข้อมูลลงระบบ";
+          if(checkExpired(res)) return;
+          if (res.startsWith("Error")) {
+             Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error');
+          } else {
+             Swal.fire('สำเร็จ!', res, 'success');
+             document.getElementById("fuelForm").reset();
+             setTodayDates(); 
+             loadRecentHistory(); 
+          }
+      }).withFailureHandler(err => {
+          btn.disabled = false; btn.innerText = "บันทึกข้อมูลลงระบบ";
+          if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+      }).addRecord(data, getCurrentToken());
+    }
+
+    function confirmDelete(type) {
+        Swal.fire({
+            title: 'ยืนยันการลบข้อมูล?',
+            text: "หากลบแล้วข้อมูลจะถูกย้ายไปเก็บใน 'ถังขยะ' และโควตาจะคืนให้อัตโนมัติ",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#C0392B',
+            cancelButtonColor: '#95A5A6',
+            confirmButtonText: 'ใช่, ลบเลย!',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoadingAlert();
+                if(type === 'fuel') processDeleteFuel();
+                else if(type === 'credit') processDeleteCredit();
+                else if(type === 'equipOil') processDeleteEquipOil();
+            }
+        });
+    }
+
+    function processDeleteFuel() {
+        let rowIndex = parseInt(document.getElementById("editRowIndex").value);
+        google.script.run.withSuccessHandler(res => {
+            if(checkExpired(res)) return;
+            if(res.startsWith("Error")) { Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error'); }
+            else { Swal.fire('ลบสำเร็จ!', res, 'success'); closeEditModal(); loadAdminRecords(); loadRecentHistory(); }
+        }).withFailureHandler(err => {
+            if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+        }).deleteFuelRecord(rowIndex, getCurrentUser(), getCurrentToken());
+    }
+
+    function processDeleteCredit() {
+        let rowIndex = parseInt(document.getElementById("editCRowIndex").value);
+        google.script.run.withSuccessHandler(res => {
+            if(checkExpired(res)) return;
+            if(res.startsWith("Error")) { Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error'); }
+            else { Swal.fire('ลบสำเร็จ!', res, 'success'); closeEditCreditModal(); loadCreditData(); }
+        }).withFailureHandler(err => {
+            if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+        }).deleteCreditRecord(rowIndex, getCurrentUser(), getCurrentToken());
+    }
+
+    function processDeleteEquipOil() {
+        let rowIndex = parseInt(document.getElementById("editERowIndex").value);
+        google.script.run.withSuccessHandler(res => {
+            if(checkExpired(res)) return;
+            if(res.startsWith("Error")) { Swal.fire('ข้อผิดพลาด!', res.replace("Error: ", ""), 'error'); }
+            else { Swal.fire('ลบสำเร็จ!', res, 'success'); closeEditEquipOilModal(); loadEquipOilData(); loadPMAlerts(); }
+        }).withFailureHandler(err => {
+            if(!checkExpired(err.message)) Swal.fire('ล้มเหลว', err.message, 'error');
+        }).deleteEquipOilRecord(rowIndex, getCurrentUser(), getCurrentToken());
+    }
+
+    function renderCharts(data) {
+        if(chartBarInst) chartBarInst.destroy();
+
+        let barLabels = [];
+        let barDiesel = []; let bar91 = []; let bar95 = [];
+        
+        let last6 = data.monthly.slice(0, 6).reverse(); 
+        last6.forEach(m => {
+            barLabels.push(m.label); barDiesel.push(m.diesel); bar91.push(m.gas91); bar95.push(m.gas95);
+        });
+
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        chartBarInst = new Chart(ctxBar, {
+            type: 'bar',
+            data: { labels: barLabels, datasets: [ { label: 'ดีเซล', data: barDiesel, backgroundColor: '#122840' }, { label: 'แก๊ส 91', data: bar91, backgroundColor: '#16a085' }, { label: 'แก๊ส 95', data: bar95, backgroundColor: '#c0392b' } ] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function loadDashboardData() {
+      let loader = document.getElementById('loader');
+      let content = document.getElementById('dashboardContent');
+      
+      if (!globalDashboardData) {
+         loader.style.display = 'block'; 
+         content.style.display = 'none';
+      }
+      
+      google.script.run
+      .withSuccessHandler(function(data) {
+          if (data && data.error) {
+             if(!globalDashboardData) loader.innerHTML = '<span style="color:red; background:#fff; padding:10px; border-radius:8px;">พบข้อผิดพลาดหลังบ้าน: ' + data.message + '</span>';
+             return;
+          }
+          
+          try {
+             globalDashboardData = data; 
+             
+             document.getElementById('bDiesel').innerText = fmt(data.balance.diesel, true);
+             document.getElementById('bGas91').innerText = fmt(data.balance.gas91, true);
+             document.getElementById('bGas95').innerText = fmt(data.balance.gas95, true);
+             
+             document.getElementById('qDiesel').innerText = fmt(data.quota.diesel, true);
+             document.getElementById('qGas91').innerText = fmt(data.quota.gas91, true);
+             document.getElementById('qGas95').innerText = fmt(data.quota.gas95, true);
+
+             let monthFilter = document.getElementById('monthFilter');
+             if(monthFilter) {
+                 let html = '<option value="all">รวมทั้งหมด (ตั้งแต่เริ่มต้น)</option>';
+                 if(data.fiscalYears && data.fiscalYears.length > 0) {
+                     html += '<optgroup label="สรุปรายปีงบประมาณ">';
+                     data.fiscalYears.forEach(fy => { html += `<option value="${fy.sortKey}">${fy.label}</option>`; });
+                     html += '</optgroup>';
+                 }
+                 if(data.monthly && data.monthly.length > 0) {
+                     html += '<optgroup label="สรุปรายเดือน">';
+                     data.monthly.forEach(m => { html += `<option value="${m.sortKey}">${m.label}</option>`; });
+                     html += '</optgroup>';
+                 }
+                 monthFilter.innerHTML = html;
+                 
+                 setTimeout(() => {
+                     updatePlateList(); 
+                     filterCardsByMonth(); 
+                 }, 50);
+             }
+             
+             setTimeout(() => {
+                 try { renderCharts(data); } catch(chartErr) { console.log("Chart Error: ", chartErr); }
+             }, 300);
+             
+             loader.style.display = 'none'; 
+             content.style.display = 'block';
+          } catch(e) {
+             console.error(e);
+             if(!globalDashboardData) loader.innerHTML = '<span style="color:red; background:#fff; padding:10px; border-radius:8px;">พบข้อผิดพลาดในการแสดงผลหน้าเว็บ: ' + e.message + '</span>';
+          }
+      })
+      .withFailureHandler(function(err) {
+          if(!globalDashboardData) loader.innerHTML = '<span style="color:red; background:#fff; padding:10px; border-radius:8px;">การเชื่อมต่อล้มเหลว: ' + err.message + '</span>';
+      })
+      .getDashboardData();
+    }
+    
+    function filterCardsByMonth() {
+      if (!globalDashboardData) return;
+      try {
+          let selObj = document.getElementById('monthFilter');
+          let val = selObj ? selObj.value : "all";
+          let selText = "ทั้งหมด";
+          if (selObj && selObj.selectedIndex >= 0 && selObj.options[selObj.selectedIndex]) {
+              selText = selObj.options[selObj.selectedIndex].text;
+          }
+          let printLabel = document.getElementById('printMonthLabel');
+          if (printLabel) printLabel.innerText = "รายงานยอดสรุป: " + selText;
+
+          if (val === "all") {
+            document.getElementById('totDiesel').innerText = fmt(globalDashboardData.totals.diesel, true);
+            document.getElementById('tot91').innerText = fmt(globalDashboardData.totals.gas91, true);
+            document.getElementById('tot95').innerText = fmt(globalDashboardData.totals.gas95, true);
+          } else if (val.startsWith("FY_")) {
+            let fyData = globalDashboardData.fiscalYears.find(f => f.sortKey === val);
+            if (fyData) {
+              document.getElementById('totDiesel').innerText = fmt(fyData.diesel, true);
+              document.getElementById('tot91').innerText = fmt(fyData.gas91, true);
+              document.getElementById('tot95').innerText = fmt(fyData.gas95, true);
+            }
+          } else {
+            let mData = globalDashboardData.monthly.find(m => m.sortKey === val);
+            if (mData) {
+              document.getElementById('totDiesel').innerText = fmt(mData.diesel, true);
+              document.getElementById('tot91').innerText = fmt(mData.gas91, true);
+              document.getElementById('tot95').innerText = fmt(mData.gas95, true);
+            } else {
+              document.getElementById('totDiesel').innerText = "0.00";
+              document.getElementById('tot91').innerText = "0.00";
+              document.getElementById('tot95').innerText = "0.00";
+            }
+          }
+
+          if (val !== "all") {
+             if (val.startsWith("FY_")) { filteredDashHistory = globalDashboardData.history.filter(r => r.fyKey === val); } 
+             else { filteredDashHistory = globalDashboardData.history.filter(r => r.monthKey === val); }
+          } else {
+             filteredDashHistory = globalDashboardData.history; 
+          }
+          
+          let searchInput = document.getElementById('searchDash');
+          let searchKw = searchInput ? searchInput.value.toLowerCase() : "";
+          if(searchKw) {
+             filteredDashHistory = filteredDashHistory.filter(r => 
+                 (r.mission && String(r.mission).toLowerCase().includes(searchKw)) ||
+                 (r.department && String(r.department).toLowerCase().includes(searchKw)) ||
+                 (r.vehicle && String(r.vehicle).toLowerCase().includes(searchKw)) ||
+                 (r.licensePlate && String(r.licensePlate).toLowerCase().includes(searchKw)) ||
+                 (r.date && String(r.date).toLowerCase().includes(searchKw))
+             );
+          }
+
+          renderDashHistoryPage(currentPageDash);
+      } catch (e) {
+          console.error("Filter Error: ", e);
+      }
+    }
+
+    function renderDashHistoryPage(page) {
+      try {
+          currentPageDash = page;
+          let tbody = document.getElementById('historyTableBody'); 
+          tbody.innerHTML = "";
+          
+          if(!filteredDashHistory || filteredDashHistory.length === 0) { 
+             tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:15px;'>ไม่มีข้อมูลในเดือน/ปีนี้ หรือไม่พบข้อมูลที่ค้นหา</td></tr>"; 
+             document.getElementById('dashPagination').innerHTML = "";
+             return; 
+          }
+          
+          let start = (page - 1) * ROWS_PER_PAGE;
+          let end = start + ROWS_PER_PAGE;
+          let paginated = filteredDashHistory.slice(start, end);
+          
+          let html = "";
+          paginated.forEach(row => {
+             let typeClass = "";
+             let typeColor = "var(--primary)"; 
+             if(row.type === "จ่าย") { typeClass = "tag-pay"; typeColor = "var(--danger)"; }
+             else if(row.type === "รับ") { typeClass = "tag-receive"; typeColor = "var(--success)"; }
+             else if(row.type === "ยืมอัตราพิกัด") { typeClass = "tag-quota-borrow"; typeColor = "var(--warning)"; }
+             else if(row.type === "เติมอัตราพิกัด") { typeClass = "tag-quota-fill"; typeColor = "var(--info)"; }
+
+             let dText = Number(row.diesel) > 0 ? `<span style="color:var(--text-main); font-weight:600;">${fmt(row.diesel)}</span>` : "-";
+             let g91Text = Number(row.gas91) > 0 ? `<span style="color:var(--text-main); font-weight:600;">${fmt(row.gas91)}</span>` : "-";
+             let g95Text = Number(row.gas95) > 0 ? `<span style="color:var(--text-main); font-weight:600;">${fmt(row.gas95)}</span>` : "-";
+
+             html += `<tr>
+               <td data-label="วันที่">${row.date}</td>
+               <td data-label="ภารกิจ (ประเภท)"><b style="color:var(--primary); font-size:14px;">${row.mission}</b> <br><small style="color:${typeColor}; font-weight:700;">[${row.type}]</small></td>
+               <td data-label="หน่วย">${row.department}</td>
+               <td data-label="ชนิดรถ">${row.vehicle || "-"}</td>
+               <td data-label="ทะเบียนรถ">${row.licensePlate || "-"}</td>
+               <td data-label="ดีเซล (ลิตร)" class="center">${dText}</td>
+               <td data-label="แก๊ส 91 (ลิตร)" class="center">${g91Text}</td>
+               <td data-label="แก๊ส 95 (ลิตร)" class="center">${g95Text}</td>
+               <td data-label="ประเภท" class="${typeClass} center">${row.type}</td>
+             </tr>`;
+          });
+          tbody.innerHTML = html;
+          renderPaginationControls('dashPagination', filteredDashHistory.length, page, 'renderDashHistoryPage');
+      } catch (e) {
+          console.error("Render Dash Error: ", e);
+      }
+    }
+  </script>
 
 </body>
 </html>
